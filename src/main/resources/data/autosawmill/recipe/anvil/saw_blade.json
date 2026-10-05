@@ -1,0 +1,16 @@
+{
+  "type": "tfc:anvil",
+  "input": {
+    "item": "tfc:metal/sheet/wrought_iron"
+  },
+  "result": {
+    "id": "autosawmill:saw_blade",
+    "count": 1
+  },
+  "tier": 2,
+  "rules": [
+    "hit_third_last",
+    "draw_second_last",
+    "punch_last"
+  ]
+}

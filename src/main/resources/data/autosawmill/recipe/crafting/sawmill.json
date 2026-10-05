@@ -1,0 +1,35 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "LGL",
+    "LBL",
+    "LML"
+  ],
+  "key": {
+    "L": {
+      "tag": "tfc:lumber"
+    },
+    "G": {
+      "tag": "c:gears/brass"
+    },
+    "B": {
+      "item": "autosawmill:saw_blade"
+    },
+    "M": [
+      {
+        "item": "tfc:brass_mechanisms"
+      },
+      {
+        "item": "tfc:metal/sheet/wrought_iron"
+      },
+      {
+        "item": "tfc:metal/sheet/copper"
+      }
+    ]
+  },
+  "result": {
+    "count": 1,
+    "id": "autosawmill:sawmill"
+  }
+}

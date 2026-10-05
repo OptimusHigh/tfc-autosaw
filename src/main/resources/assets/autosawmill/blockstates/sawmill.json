@@ -1,0 +1,23 @@
+{
+  "variants": {
+    "facing=north,part=bed": { "model": "autosawmill:block/sawmill" },
+    "facing=east,part=bed": { "model": "autosawmill:block/sawmill", "y": 90 },
+    "facing=south,part=bed": { "model": "autosawmill:block/sawmill", "y": 180 },
+    "facing=west,part=bed": { "model": "autosawmill:block/sawmill", "y": 270 },
+
+    "facing=north,part=frame_top": { "model": "autosawmill:block/empty" },
+    "facing=east,part=frame_top": { "model": "autosawmill:block/empty" },
+    "facing=south,part=frame_top": { "model": "autosawmill:block/empty" },
+    "facing=west,part=frame_top": { "model": "autosawmill:block/empty" },
+
+    "facing=north,part=gearbox_lower": { "model": "autosawmill:block/empty" },
+    "facing=east,part=gearbox_lower": { "model": "autosawmill:block/empty" },
+    "facing=south,part=gearbox_lower": { "model": "autosawmill:block/empty" },
+    "facing=west,part=gearbox_lower": { "model": "autosawmill:block/empty" },
+
+    "facing=north,part=gearbox_upper": { "model": "autosawmill:block/empty" },
+    "facing=east,part=gearbox_upper": { "model": "autosawmill:block/empty" },
+    "facing=south,part=gearbox_upper": { "model": "autosawmill:block/empty" },
+    "facing=west,part=gearbox_upper": { "model": "autosawmill:block/empty" }
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "tfc_metal_tools"
+    }
+  ],
+  "pattern": [
+    "RSR",
+    " H "
+  ],
+  "key": {
+    "R": {
+      "tag": "c:rivets"
+    },
+    "S": [
+      {
+        "item": "tfc:metal/saw_blade/wrought_iron"
+      },
+      {
+        "item": "tfc:metal/saw_blade/steel"
+      },
+      {
+        "item": "tfc:metal/saw_blade/black_steel"
+      },
+      {
+        "item": "tfc:metal/saw_blade/blue_steel"
+      },
+      {
+        "item": "tfc:metal/saw_blade/red_steel"
+      },
+      {
+        "item": "tfc:metal/saw_blade/bronze"
+      },
+      {
+        "item": "tfc:metal/saw_blade/bismuth_bronze"
+      },
+      {
+        "item": "tfc:metal/saw_blade/black_bronze"
+      },
+      {
+        "item": "tfc:metal/saw_blade/copper"
+      },
+      {
+        "item": "tfc:metal/sheet/wrought_iron"
+      },
+      {
+        "item": "tfc:metal/sheet/steel"
+      }
+    ],
+    "H": [
+      {
+        "tag": "c:handle/saw"
+      },
+      {
+        "tag": "c:rods/wooden"
+      }
+    ]
+  },
+  "result": {
+    "count": 1,
+    "id": "autosawmill:saw_blade"
+  }
+}

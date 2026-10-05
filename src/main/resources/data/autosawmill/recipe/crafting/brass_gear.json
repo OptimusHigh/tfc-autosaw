@@ -1,0 +1,40 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:not",
+      "value": {
+        "type": "neoforge:mod_loaded",
+        "modid": "tfc_items"
+      }
+    }
+  ],
+  "pattern": [
+    " B ",
+    "B#B",
+    " B "
+  ],
+  "key": {
+    "B": [
+      {
+        "item": "tfc:metal/ingot/brass"
+      },
+      {
+        "item": "tfc:metal/sheet/brass"
+      }
+    ],
+    "#": [
+      {
+        "item": "tfc:metal/rod/brass"
+      },
+      {
+        "tag": "c:rods/wooden"
+      }
+    ]
+  },
+  "result": {
+    "count": 1,
+    "id": "autosawmill:brass_gear"
+  }
+}

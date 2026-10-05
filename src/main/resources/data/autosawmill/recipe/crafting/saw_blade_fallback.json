@@ -1,0 +1,39 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:not",
+      "value": {
+        "type": "neoforge:mod_loaded",
+        "modid": "tfc_metal_tools"
+      }
+    }
+  ],
+  "pattern": [
+    "SXS"
+  ],
+  "key": {
+    "S": {
+      "tag": "c:rods/wooden"
+    },
+    "X": [
+      {
+        "tag": "c:tools/saw"
+      },
+      {
+        "item": "tfc:metal/saw_blade/wrought_iron"
+      },
+      {
+        "item": "tfc:metal/saw_blade/steel"
+      },
+      {
+        "item": "tfc:metal/sheet/wrought_iron"
+      }
+    ]
+  },
+  "result": {
+    "count": 1,
+    "id": "autosawmill:saw_blade"
+  }
+}

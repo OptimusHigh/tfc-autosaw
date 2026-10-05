@@ -1,0 +1,13 @@
+{
+  "replace": false,
+  "values": [
+    {
+      "id": "tfc_items:brass_gear",
+      "required": false
+    },
+    {
+      "id": "autosawmill:brass_gear",
+      "required": false
+    }
+  ]
+}

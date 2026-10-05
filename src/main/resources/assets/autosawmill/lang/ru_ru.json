@@ -1,0 +1,12 @@
+{
+  "itemGroup.autosawmill": "Автоматическая лесопилка",
+  "item.autosawmill.saw_blade": "Полотно пилы",
+  "item.autosawmill.brass_gear": "Латунная шестерня",
+  "block.autosawmill.support_pile": "Куча опор",
+  "block.autosawmill.sawmill": "Автоматическая лесопилка",
+  "autosawmill.status.jammed": "Лесопилку заклинило! Освободите боковые выходы или контейнер снизу.",
+  "autosawmill.status.no_power": "Нет механической энергии (подключите вал TFC сзади за лезвием или за шестернёй справа).",
+  "autosawmill.status.cutting": "Идёт распил: %d%%",
+  "autosawmill.status.cutting_item": "Идёт распил: %s (%d%%)",
+  "autosawmill.status.idle": "Лесопилка готова к работе. Вложите бревно (ПКМ) или поставьте блок под полотно пилы."
+}

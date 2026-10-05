@@ -1,0 +1,42 @@
+{
+  "replace": false,
+  "values": [
+    "autosawmill:saw_blade",
+    {
+      "id": "tfc:metal/saw_blade/wrought_iron",
+      "required": false
+    },
+    {
+      "id": "tfc:metal/saw_blade/steel",
+      "required": false
+    },
+    {
+      "id": "tfc:metal/saw_blade/black_steel",
+      "required": false
+    },
+    {
+      "id": "tfc:metal/saw_blade/blue_steel",
+      "required": false
+    },
+    {
+      "id": "tfc:metal/saw_blade/red_steel",
+      "required": false
+    },
+    {
+      "id": "tfc:metal/saw_blade/bronze",
+      "required": false
+    },
+    {
+      "id": "tfc:metal/saw_blade/bismuth_bronze",
+      "required": false
+    },
+    {
+      "id": "tfc:metal/saw_blade/black_bronze",
+      "required": false
+    },
+    {
+      "id": "tfc:metal/saw_blade/copper",
+      "required": false
+    }
+  ]
+}
