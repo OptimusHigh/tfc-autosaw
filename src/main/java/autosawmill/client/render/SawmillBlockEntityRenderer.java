@@ -55,14 +55,14 @@ public class SawmillBlockEntityRenderer implements BlockEntityRenderer<SawmillBl
         final float pinY = 24.0f + PIN_RADIUS * Mth.sin(theta + PIN_INITIAL_PHASE);
         final float pinY0 = 24.0f + PIN_RADIUS * Mth.sin(PIN_INITIAL_PHASE);
 
-        // Cutting progress sinks the blade into the log:
-        final float progressFraction = sawmill.getMaxProgress() > 0 ? (sawmill.getProgress() / sawmill.getMaxProgress()) : 0.0f;
-        final float cutDepthPixels = -progressFraction * 2.0f;
+        // Cutting progress sinks the blade downward through the wood (0% -> 100%):
+        final float progressFraction = (sawmill.hasInputItem() && sawmill.getMaxProgress() > 0) ? (sawmill.getProgress() / sawmill.getMaxProgress()) : 0.0f;
+        final float cutDescentPixels = -progressFraction * 7.5f; // Sinks ~7.5 pixels (~0.47 blocks) during sawing
 
-        // Full vertical reciprocating stroke driven by crank pin:
-        final float verticalStroke = 1.25f * (pinY - pinY0);
+        // Rapid vertical reciprocating stroke driven by crank pin:
+        final float verticalStroke = (pinY - pinY0) * 0.40f;
 
-        final float yOffsetPixels = verticalStroke + cutDepthPixels;
+        final float yOffsetPixels = cutDescentPixels + verticalStroke;
         final float sliderY = BASE_SLIDER_Y + yOffsetPixels;
         final float dy = sliderY - pinY;
         final float dx = (float) Math.sqrt(Math.max(0.0f, ROD_LENGTH * ROD_LENGTH - dy * dy));
@@ -173,74 +173,88 @@ public class SawmillBlockEntityRenderer implements BlockEntityRenderer<SawmillBl
     public static java.util.List<LogTransform> getLogTransforms(int count) {
         final java.util.List<LogTransform> list = new java.util.ArrayList<>();
         final int c = Math.min(Math.max(count, 1), 16);
-        if (c <= 6) {
-            final float D = 0.26f;
-            final float R = D * 0.5f;
-            final float dy = D * 0.866025f;
-            final float yBed = 0.25f;
-            final float xCenter = -0.24f;
-            final float sz = 0.85f;
-            appendStackTransforms(list, c, D, R, dy, yBed, xCenter, 0.0f, sz);
+        final float D = 0.22f;
+        final float R = D * 0.5f;
+        final float dy = D * 0.866025f;
+        final float yBed = 0.25f;
+        final float xc = -0.24f;
+        final float sz = 0.85f;
+        final float zc = 0.0f;
+
+        if (c == 1) {
+            list.add(new LogTransform(xc, yBed + R, zc, D, D, sz));
+        } else if (c == 2) {
+            addRow(list, 2, xc, yBed + R, zc, D, sz);
+        } else if (c == 3) {
+            addRow(list, 2, xc, yBed + R, zc, D, sz);
+            list.add(new LogTransform(xc, yBed + R + dy, zc, D, D, sz));
+        } else if (c == 4) {
+            addRow(list, 2, xc, yBed + R, zc, D, sz);
+            addRow(list, 2, xc, yBed + R + D, zc, D, sz);
+        } else if (c == 5) {
+            addRow(list, 3, xc, yBed + R, zc, D, sz);
+            addRow(list, 2, xc, yBed + R + dy, zc, D, sz);
+        } else if (c == 6) {
+            addRow(list, 3, xc, yBed + R, zc, D, sz);
+            addRow(list, 2, xc, yBed + R + dy, zc, D, sz);
+            list.add(new LogTransform(xc, yBed + R + 2f * dy, zc, D, D, sz));
+        } else if (c == 7) {
+            addRow(list, 4, xc, yBed + R, zc, D, sz);
+            addRow(list, 2, xc, yBed + R + dy, zc, D, sz);
+            list.add(new LogTransform(xc, yBed + R + 2f * dy, zc, D, D, sz));
+        } else if (c == 8) {
+            addRow(list, 4, xc, yBed + R, zc, D, sz);
+            addRow(list, 3, xc, yBed + R + dy, zc, D, sz);
+            list.add(new LogTransform(xc, yBed + R + 2f * dy, zc, D, D, sz));
+        } else if (c == 9) {
+            addRow(list, 4, xc, yBed + R, zc, D, sz);
+            addRow(list, 3, xc, yBed + R + dy, zc, D, sz);
+            addRow(list, 2, xc, yBed + R + 2f * dy, zc, D, sz);
+        } else if (c == 10) {
+            addRow(list, 4, xc, yBed + R, zc, D, sz);
+            addRow(list, 3, xc, yBed + R + dy, zc, D, sz);
+            addRow(list, 2, xc, yBed + R + 2f * dy, zc, D, sz);
+            list.add(new LogTransform(xc, yBed + R + 3f * dy, zc, D, D, sz));
+        } else if (c == 11) {
+            addRow(list, 5, xc, yBed + R, zc, D, sz);
+            addRow(list, 3, xc, yBed + R + dy, zc, D, sz);
+            addRow(list, 2, xc, yBed + R + 2f * dy, zc, D, sz);
+            list.add(new LogTransform(xc, yBed + R + 3f * dy, zc, D, D, sz));
+        } else if (c == 12) {
+            addRow(list, 5, xc, yBed + R, zc, D, sz);
+            addRow(list, 4, xc, yBed + R + dy, zc, D, sz);
+            addRow(list, 2, xc, yBed + R + 2f * dy, zc, D, sz);
+            list.add(new LogTransform(xc, yBed + R + 3f * dy, zc, D, D, sz));
+        } else if (c == 13) {
+            addRow(list, 5, xc, yBed + R, zc, D, sz);
+            addRow(list, 4, xc, yBed + R + dy, zc, D, sz);
+            addRow(list, 3, xc, yBed + R + 2f * dy, zc, D, sz);
+            list.add(new LogTransform(xc, yBed + R + 3f * dy, zc, D, D, sz));
+        } else if (c == 14) {
+            addRow(list, 5, xc, yBed + R, zc, D, sz);
+            addRow(list, 4, xc, yBed + R + dy, zc, D, sz);
+            addRow(list, 3, xc, yBed + R + 2f * dy, zc, D, sz);
+            addRow(list, 2, xc, yBed + R + 3f * dy, zc, D, sz);
+        } else if (c == 15) {
+            addRow(list, 5, xc, yBed + R, zc, D, sz);
+            addRow(list, 4, xc, yBed + R + dy, zc, D, sz);
+            addRow(list, 3, xc, yBed + R + 2f * dy, zc, D, sz);
+            addRow(list, 2, xc, yBed + R + 3f * dy, zc, D, sz);
+            list.add(new LogTransform(xc, yBed + R + 4f * dy, zc, D, D, sz));
         } else {
-            final int frontCount = (c + 1) / 2;
-            final int rearCount = c / 2;
-            final float D = 0.24f;
-            final float R = D * 0.5f;
-            final float dy = D * 0.866025f;
-            final float yBed = 0.25f;
-            final float xCenter = -0.24f;
-            final float sz = 0.38f;
-            appendStackTransforms(list, frontCount, D, R, dy, yBed, xCenter, 0.22f, sz);
-            appendStackTransforms(list, rearCount, D, R, dy, yBed, xCenter, -0.22f, sz);
+            addRow(list, 6, xc, yBed + R, zc, D, sz);
+            addRow(list, 4, xc, yBed + R + dy, zc, D, sz);
+            addRow(list, 3, xc, yBed + R + 2f * dy, zc, D, sz);
+            addRow(list, 2, xc, yBed + R + 3f * dy, zc, D, sz);
+            list.add(new LogTransform(xc, yBed + R + 4f * dy, zc, D, D, sz));
         }
         return list;
     }
 
-    private static void appendStackTransforms(java.util.List<LogTransform> list, int n, float D, float R, float dy, float yBed, float xc, float zc, float sz) {
-        if (n == 1) {
-            list.add(new LogTransform(xc, yBed + R, zc, D, D, sz));
-        } else if (n == 2) {
-            list.add(new LogTransform(xc - R, yBed + R, zc, D, D, sz));
-            list.add(new LogTransform(xc + R, yBed + R, zc, D, D, sz));
-        } else if (n == 3) {
-            list.add(new LogTransform(xc - R, yBed + R, zc, D, D, sz));
-            list.add(new LogTransform(xc + R, yBed + R, zc, D, D, sz));
-            list.add(new LogTransform(xc, yBed + R + dy, zc, D, D, sz));
-        } else if (n == 4) {
-            list.add(new LogTransform(xc - R, yBed + R, zc, D, D, sz));
-            list.add(new LogTransform(xc + R, yBed + R, zc, D, D, sz));
-            list.add(new LogTransform(xc - R, yBed + R + dy, zc, D, D, sz));
-            list.add(new LogTransform(xc + R, yBed + R + dy, zc, D, D, sz));
-        } else if (n == 5) {
-            list.add(new LogTransform(xc - D, yBed + R, zc, D, D, sz));
-            list.add(new LogTransform(xc, yBed + R, zc, D, D, sz));
-            list.add(new LogTransform(xc + D, yBed + R, zc, D, D, sz));
-            list.add(new LogTransform(xc - R, yBed + R + dy, zc, D, D, sz));
-            list.add(new LogTransform(xc + R, yBed + R + dy, zc, D, D, sz));
-        } else if (n == 6) {
-            list.add(new LogTransform(xc - D, yBed + R, zc, D, D, sz));
-            list.add(new LogTransform(xc, yBed + R, zc, D, D, sz));
-            list.add(new LogTransform(xc + D, yBed + R, zc, D, D, sz));
-            list.add(new LogTransform(xc - R, yBed + R + dy, zc, D, D, sz));
-            list.add(new LogTransform(xc + R, yBed + R + dy, zc, D, D, sz));
-            list.add(new LogTransform(xc, yBed + R + 2f * dy, zc, D, D, sz));
-        } else if (n == 7) {
-            list.add(new LogTransform(xc - 1.5f * D, yBed + R, zc, D, D, sz));
-            list.add(new LogTransform(xc - 0.5f * D, yBed + R, zc, D, D, sz));
-            list.add(new LogTransform(xc + 0.5f * D, yBed + R, zc, D, D, sz));
-            list.add(new LogTransform(xc + 1.5f * D, yBed + R, zc, D, D, sz));
-            list.add(new LogTransform(xc - R, yBed + R + dy, zc, D, D, sz));
-            list.add(new LogTransform(xc + R, yBed + R + dy, zc, D, D, sz));
-            list.add(new LogTransform(xc, yBed + R + 2f * dy, zc, D, D, sz));
-        } else {
-            list.add(new LogTransform(xc - 1.5f * D, yBed + R, zc, D, D, sz));
-            list.add(new LogTransform(xc - 0.5f * D, yBed + R, zc, D, D, sz));
-            list.add(new LogTransform(xc + 0.5f * D, yBed + R, zc, D, D, sz));
-            list.add(new LogTransform(xc + 1.5f * D, yBed + R, zc, D, D, sz));
-            list.add(new LogTransform(xc - D, yBed + R + dy, zc, D, D, sz));
-            list.add(new LogTransform(xc, yBed + R + dy, zc, D, D, sz));
-            list.add(new LogTransform(xc + D, yBed + R + dy, zc, D, D, sz));
-            list.add(new LogTransform(xc, yBed + R + 2f * dy, zc, D, D, sz));
+    private static void addRow(java.util.List<LogTransform> list, int n, float xc, float y, float zc, float D, float sz) {
+        final float startX = xc - (n - 1) * 0.5f * D;
+        for (int i = 0; i < n; i++) {
+            list.add(new LogTransform(startX + i * D, y, zc, D, D, sz));
         }
     }
 
