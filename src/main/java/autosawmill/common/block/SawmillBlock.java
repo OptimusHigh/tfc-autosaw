@@ -157,10 +157,12 @@ public class SawmillBlock extends ExtendedBlock implements IForgeBlockExtension,
     @Override
     @SuppressWarnings("unchecked")
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
-        if (level.isClientSide() || state.getValue(PART) != SawmillPart.BED) {
+        if (state.getValue(PART) != SawmillPart.BED || type != ModBlockEntities.SAWMILL.get()) {
             return null;
         }
-        return type == ModBlockEntities.SAWMILL.get() ? (lvl, p, st, be) -> SawmillBlockEntity.serverTick(lvl, p, st, (SawmillBlockEntity) be) : null;
+        return level.isClientSide()
+            ? (lvl, p, st, be) -> SawmillBlockEntity.clientTick(lvl, p, st, (SawmillBlockEntity) be)
+            : (lvl, p, st, be) -> SawmillBlockEntity.serverTick(lvl, p, st, (SawmillBlockEntity) be);
     }
 
     @Override

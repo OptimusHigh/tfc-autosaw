@@ -38,6 +38,9 @@ public class SawmillBlockEntity extends TFCBlockEntity implements RotationSinkBl
     private boolean isJammed = false;
     private boolean alternation = false;
 
+    private float prevContinuousAngle = 0.0f;
+    private float continuousAngle = 0.0f;
+
     public SawmillBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.SAWMILL.get(), pos, state);
 
@@ -54,6 +57,27 @@ public class SawmillBlockEntity extends TFCBlockEntity implements RotationSinkBl
 
     public static void serverTick(Level level, BlockPos pos, BlockState state, SawmillBlockEntity sawmill) {
         sawmill.tick(level, pos, state);
+    }
+
+    public static void clientTick(Level level, BlockPos pos, BlockState state, SawmillBlockEntity sawmill) {
+        sawmill.prevContinuousAngle = sawmill.continuousAngle;
+        final Rotation rot = sawmill.getActiveRotation();
+        if (rot != null && Math.abs(rot.speed()) > 0.001f) {
+            sawmill.continuousAngle += Math.abs(rot.speed());
+            final float twoPi4 = 8.0f * (float) Math.PI;
+            if (sawmill.continuousAngle >= twoPi4) {
+                sawmill.continuousAngle -= twoPi4;
+                sawmill.prevContinuousAngle -= twoPi4;
+            }
+        }
+    }
+
+    public float getContinuousAngle(float partialTick) {
+        final Rotation rot = getActiveRotation();
+        if (rot != null && Math.abs(rot.speed()) > 0.001f) {
+            return net.minecraft.util.Mth.lerp(partialTick, prevContinuousAngle, continuousAngle);
+        }
+        return continuousAngle;
     }
 
     public boolean hasInputItem() {

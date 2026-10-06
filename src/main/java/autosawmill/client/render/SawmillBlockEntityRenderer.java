@@ -88,13 +88,12 @@ public class SawmillBlockEntityRenderer implements BlockEntityRenderer<SawmillBl
         }
 
         final Direction facing = state.getValue(SawmillBlock.FACING);
-        final float theta = sawmill.getRotationAngle(partialTick);
-        final net.dries007.tfc.util.rotation.Rotation rot = sawmill.getActiveRotation();
-        final float dir = (rot != null && rot.speed() < 0) ? -1.0f : 1.0f;
-        final float forwardAngle = theta * dir;
+        final float continuousAngle = sawmill.getContinuousAngle(partialTick);
 
         // Model animation has 4 revolutions (8*PI radians) per 8-second cycle with 32 segments (45 deg each):
-        final float pos = ((forwardAngle * (4.0f / (float) Math.PI)) % 32.0f + 32.0f) % 32.0f;
+        final float twoPi4 = 8.0f * (float) Math.PI;
+        final float animAngle = ((continuousAngle % twoPi4) + twoPi4) % twoPi4;
+        final float pos = animAngle * (4.0f / (float) Math.PI);
 
         final float sawXPixels = evalCatmullRom(SAW_X, pos);
         final float sawYPixels = evalCatmullRom(SAW_Y, pos);
@@ -102,8 +101,8 @@ public class SawmillBlockEntityRenderer implements BlockEntityRenderer<SawmillBl
         final float xOffset = sawXPixels / 16.0f; // in blocks
         final float yOffset = sawYPixels / 16.0f; // in blocks
 
-        final float pinX = -48.0f + PIN_RADIUS * Mth.cos(theta + PIN_INITIAL_PHASE);
-        final float pinY = 24.0f + PIN_RADIUS * Mth.sin(theta + PIN_INITIAL_PHASE);
+        final float pinX = -48.0f + PIN_RADIUS * Mth.cos(animAngle + PIN_INITIAL_PHASE);
+        final float pinY = 24.0f + PIN_RADIUS * Mth.sin(animAngle + PIN_INITIAL_PHASE);
 
         final float sliderX = SLIDER_X + sawXPixels;
         final float sliderY = BASE_SLIDER_Y + sawYPixels;
@@ -125,7 +124,7 @@ public class SawmillBlockEntityRenderer implements BlockEntityRenderer<SawmillBl
         // 3. Eccentric Pin (rotates on the gear face)
         poseStack.pushPose();
         poseStack.translate(-3.0f, 1.5f, 0.09375f);
-        poseStack.mulPose(Axis.ZP.rotation(theta));
+        poseStack.mulPose(Axis.ZP.rotation(animAngle));
         for (var cube : SawmillModelData.PIN) {
             cube.render(poseStack, frameBuffer, packedLight, packedOverlay);
         }
@@ -152,7 +151,7 @@ public class SawmillBlockEntityRenderer implements BlockEntityRenderer<SawmillBl
         final VertexConsumer gearBuffer = bufferSource.getBuffer(RenderType.entityCutoutNoCull(SawmillModelData.GEAR_TEXTURE));
         poseStack.pushPose();
         poseStack.translate(-3.0f, 1.5f, 0.09375f);
-        poseStack.mulPose(Axis.ZP.rotation(theta));
+        poseStack.mulPose(Axis.ZP.rotation(animAngle));
         for (var cube : SawmillModelData.BRASS_GEAR) {
             cube.render(poseStack, gearBuffer, packedLight, packedOverlay);
         }
