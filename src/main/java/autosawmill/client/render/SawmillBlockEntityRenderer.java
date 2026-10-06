@@ -28,9 +28,49 @@ public class SawmillBlockEntityRenderer implements BlockEntityRenderer<SawmillBl
     // Crank-slider kinematic dimensions (in pixels from model geometry)
     private static final float PIN_RADIUS = 4.950f;
     private static final float PIN_INITIAL_PHASE = 135.0f * (Mth.PI / 180.0f);
-    private static final float ROD_LENGTH = 21.470f;
     private static final float SLIDER_X = -30.475f;
     private static final float BASE_SLIDER_Y = 31.850f;
+
+    // 33 Keyframe points extracted directly from 'Пила (9).bbmodel' (animation 'animation', length 8.0s)
+    private static final float[] SAW_X = new float[] {
+        -0.055f, -2.160f, -2.020f,  0.875f,
+         5.565f,  8.380f,  7.390f,  3.795f,
+         0.315f, -1.070f, -0.245f,  3.160f,
+         7.025f,  8.810f,  6.910f,  3.095f,
+        -0.230f, -1.175f,  0.315f,  3.760f,
+         7.470f,  7.890f,  5.155f,  0.685f,
+        -2.350f, -2.145f,  0.465f,  3.680f,
+         7.185f,  8.780f,  7.465f,  3.920f,
+        -0.055f
+    };
+
+    private static final float[] SAW_Y = new float[] {
+         -0.550f,  -0.620f,  -1.250f,  -1.840f,
+         -2.500f,  -3.090f,  -3.750f,  -4.340f,
+         -5.000f,  -5.590f,  -6.250f,  -6.850f,
+         -7.500f,  -8.000f,  -8.560f,  -9.090f,
+         -9.740f, -10.460f, -11.250f, -11.830f,
+        -12.470f, -13.110f, -13.810f, -14.450f,
+        -15.000f, -13.810f, -12.100f, -10.430f,
+         -8.460f,  -6.470f,  -4.270f,  -2.270f,
+         -0.550f
+    };
+
+    private static float evalCatmullRom(float[] arr, float pos) {
+        final float p = (pos % 32.0f + 32.0f) % 32.0f;
+        final int i = (int) p;
+        final float t = p - i;
+        final float p0 = arr[(i - 1 + 32) % 32];
+        final float p1 = arr[i];
+        final float p2 = arr[(i + 1) % 32];
+        final float p3 = arr[(i + 2) % 32];
+        return 0.5f * (
+            (2.0f * p1) +
+            (-p0 + p2) * t +
+            (2.0f * p0 - 5.0f * p1 + 4.0f * p2 - p3) * (t * t) +
+            (-p0 + 3.0f * p1 - 3.0f * p2 + p3) * (t * t * t)
+        );
+    }
 
     public SawmillBlockEntityRenderer(BlockEntityRendererProvider.Context context) {
     }
@@ -49,28 +89,24 @@ public class SawmillBlockEntityRenderer implements BlockEntityRenderer<SawmillBl
 
         final Direction facing = state.getValue(SawmillBlock.FACING);
         final float theta = sawmill.getRotationAngle(partialTick);
+        final net.dries007.tfc.util.rotation.Rotation rot = sawmill.getActiveRotation();
+        final float dir = (rot != null && rot.speed() < 0) ? -1.0f : 1.0f;
+        final float forwardAngle = theta * dir;
 
-        // Analytical crank-slider kinematics (Horizontal & Vertical 2D motion)
+        // Model animation has 4 revolutions (8*PI radians) per 8-second cycle with 32 segments (45 deg each):
+        final float pos = ((forwardAngle * (4.0f / (float) Math.PI)) % 32.0f + 32.0f) % 32.0f;
+
+        final float sawXPixels = evalCatmullRom(SAW_X, pos);
+        final float sawYPixels = evalCatmullRom(SAW_Y, pos);
+
+        final float xOffset = sawXPixels / 16.0f; // in blocks
+        final float yOffset = sawYPixels / 16.0f; // in blocks
+
         final float pinX = -48.0f + PIN_RADIUS * Mth.cos(theta + PIN_INITIAL_PHASE);
         final float pinY = 24.0f + PIN_RADIUS * Mth.sin(theta + PIN_INITIAL_PHASE);
-        final float pinY0 = 24.0f + PIN_RADIUS * Mth.sin(PIN_INITIAL_PHASE);
 
-        // Cutting progress sinks the blade downward through the wood (0% -> 100%):
-        final float progressFraction = (sawmill.hasInputItem() && sawmill.getMaxProgress() > 0) ? (sawmill.getProgress() / sawmill.getMaxProgress()) : 0.0f;
-        final float cutDescentPixels = -progressFraction * 7.5f; // Sinks ~7.5 pixels (~0.47 blocks) during sawing
-
-        // Rapid vertical reciprocating stroke driven by crank pin:
-        final float verticalStroke = (pinY - pinY0) * 0.40f;
-
-        final float yOffsetPixels = cutDescentPixels + verticalStroke;
-        final float sliderY = BASE_SLIDER_Y + yOffsetPixels;
-        final float dy = sliderY - pinY;
-        final float dx = (float) Math.sqrt(Math.max(0.0f, ROD_LENGTH * ROD_LENGTH - dy * dy));
-        final float sliderX = pinX + dx;
-        final float xOffsetPixels = sliderX - SLIDER_X;
-
-        final float xOffset = xOffsetPixels / 16.0f; // in blocks
-        final float yOffset = yOffsetPixels / 16.0f; // in blocks
+        final float sliderX = SLIDER_X + sawXPixels;
+        final float sliderY = BASE_SLIDER_Y + sawYPixels;
 
         final float rodAngle = (float) Math.atan2(pinY - sliderY, pinX - sliderX);
 
@@ -128,7 +164,7 @@ public class SawmillBlockEntityRenderer implements BlockEntityRenderer<SawmillBl
             final BlockState logState = resolveBlockStateForInput(input);
             final java.util.List<LogTransform> transforms = getLogTransforms(input.getCount());
 
-            final float isSawing = sawmill.getProgress() > 0 ? 1.0f : 0.0f;
+            final float isSawing = (sawmill.hasInputItem() && sawmill.hasKineticPower()) ? 1.0f : 0.0f;
             final float time = level.getGameTime() + partialTick;
             final int light = Math.max(packedLight, net.minecraft.client.renderer.LevelRenderer.getLightColor(level, sawmill.getBlockPos().above()));
 

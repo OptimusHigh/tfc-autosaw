@@ -28,8 +28,8 @@ import java.util.List;
  * Integrates into TFC's mechanical rotation network as a RotationSinkBlockEntity.
  */
 public class SawmillBlockEntity extends TFCBlockEntity implements RotationSinkBlockEntity {
-    public static final float DEFAULT_MAX_PROGRESS = 100.0f;
     public static final float PROGRESS_MODIFIER = 10.0f;
+    public static final float DEFAULT_MAX_PROGRESS = 8.0f * (float) Math.PI * PROGRESS_MODIFIER;
 
     private final Node node;
     private ItemStack inputStack = ItemStack.EMPTY;
@@ -71,6 +71,7 @@ public class SawmillBlockEntity extends TFCBlockEntity implements RotationSinkBl
         if (inputStack.isEmpty()) {
             int toInsert = Math.min(maxCount, stack.getCount());
             inputStack = stack.copyWithCount(toInsert);
+            progress = 0.0f;
             markForSync();
             return toInsert;
         } else if (ItemStack.isSameItemSameComponents(inputStack, stack)) {
