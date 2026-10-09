@@ -5,11 +5,14 @@ import autosawmill.common.blockentity.SawmillBlockEntity;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
+import net.dries007.tfc.common.blockentities.rotation.CrankshaftBlockEntity;
+import net.dries007.tfc.common.blocks.rotation.CrankshaftBlock;
+import net.dries007.tfc.util.rotation.Rotation;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
-import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.util.Mth;
@@ -20,57 +23,15 @@ import net.minecraft.world.phys.AABB;
 
 /**
  * High-performance, clean BlockEntityRenderer for the Sawmill.
- * Renders the moving brass gear with eccentric pin, the oscillating connecting rod,
- * and the vertically reciprocating saw frame.
+ * Renders the reciprocating saw frame & blade synchronized with the native TFC crankshaft,
+ * along with the bilateral mounting flange and multi-log cutting items.
  */
 public class SawmillBlockEntityRenderer implements BlockEntityRenderer<SawmillBlockEntity> {
 
-    // Crank-slider kinematic dimensions (in pixels from model geometry)
-    private static final float PIN_RADIUS = 4.950f;
-    private static final float PIN_INITIAL_PHASE = 135.0f * (Mth.PI / 180.0f);
-    private static final float SLIDER_X = -30.475f;
-    private static final float BASE_SLIDER_Y = 31.850f;
-
-    // 33 Keyframe points extracted directly from 'Пила (9).bbmodel' (animation 'animation', length 8.0s)
-    private static final float[] SAW_X = new float[] {
-        -0.055f, -2.160f, -2.020f,  0.875f,
-         5.565f,  8.380f,  7.390f,  3.795f,
-         0.315f, -1.070f, -0.245f,  3.160f,
-         7.025f,  8.810f,  6.910f,  3.095f,
-        -0.230f, -1.175f,  0.315f,  3.760f,
-         7.470f,  7.890f,  5.155f,  0.685f,
-        -2.350f, -2.145f,  0.465f,  3.680f,
-         7.185f,  8.780f,  7.465f,  3.920f,
-        -0.055f
-    };
-
-    private static final float[] SAW_Y = new float[] {
-         -0.550f,  -0.620f,  -1.250f,  -1.840f,
-         -2.500f,  -3.090f,  -3.750f,  -4.340f,
-         -5.000f,  -5.590f,  -6.250f,  -6.850f,
-         -7.500f,  -8.000f,  -8.560f,  -9.090f,
-         -9.740f, -10.460f, -11.250f, -11.830f,
-        -12.470f, -13.110f, -13.810f, -14.450f,
-        -15.000f, -13.810f, -12.100f, -10.430f,
-         -8.460f,  -6.470f,  -4.270f,  -2.270f,
-         -0.550f
-    };
-
-    private static float evalCatmullRom(float[] arr, float pos) {
-        final float p = (pos % 32.0f + 32.0f) % 32.0f;
-        final int i = (int) p;
-        final float t = p - i;
-        final float p0 = arr[(i - 1 + 32) % 32];
-        final float p1 = arr[i];
-        final float p2 = arr[(i + 1) % 32];
-        final float p3 = arr[(i + 2) % 32];
-        return 0.5f * (
-            (2.0f * p1) +
-            (-p0 + p2) * t +
-            (2.0f * p0 - 5.0f * p1 + 4.0f * p2 - p3) * (t * t) +
-            (-p0 + 3.0f * p1 - 3.0f * p2 + p3) * (t * t * t)
-        );
-    }
+    // Maximum vertical stroke: 12 pixels = 0.75 blocks
+    private static final float MAX_VERTICAL_STROKE = 12.0f / 16.0f;
+    // Subtle horizontal pitch: 1.2 pixels = 0.075 blocks
+    private static final float MAX_HORIZONTAL_PITCH = 1.2f / 16.0f;
 
     public SawmillBlockEntityRenderer(BlockEntityRendererProvider.Context context) {
     }
@@ -88,76 +49,59 @@ public class SawmillBlockEntityRenderer implements BlockEntityRenderer<SawmillBl
         }
 
         final Direction facing = state.getValue(SawmillBlock.FACING);
-        final float continuousAngle = sawmill.getContinuousAngle(partialTick);
 
-        // Model animation has 4 revolutions (8*PI radians) per 8-second cycle with 32 segments (45 deg each):
-        final float twoPi4 = 8.0f * (float) Math.PI;
-        final float animAngle = ((continuousAngle % twoPi4) + twoPi4) % twoPi4;
-        final float pos = animAngle * (4.0f / (float) Math.PI);
+        // 1. Calculate analytical displacement directly from native TFC crankshaft
+        final CrankshaftBlockEntity crank = sawmill.getCrankBlockEntity();
+        float xOffset = 0.0f;
+        float yOffset = 0.0f;
 
-        final float sawXPixels = evalCatmullRom(SAW_X, pos);
-        final float sawYPixels = evalCatmullRom(SAW_Y, pos);
+        if (crank != null) {
+            final Rotation rot = crank.getRotationNode().rotation();
+            final boolean isRotating = rot != null && Math.abs(rot.speed()) > 0.001f;
 
-        final float xOffset = sawXPixels / 16.0f; // in blocks
-        final float yOffset = sawYPixels / 16.0f; // in blocks
+            if (isRotating) {
+                final Direction crankFace = crank.getBlockState().getValue(CrankshaftBlock.FACING);
+                final float angle = CrankshaftBlockEntity.calculateRealRotationAngle(crank, crankFace, partialTick);
 
-        final float pinX = -48.0f + PIN_RADIUS * Mth.cos(animAngle + PIN_INITIAL_PHASE);
-        final float pinY = 24.0f + PIN_RADIUS * Mth.sin(animAngle + PIN_INITIAL_PHASE);
-
-        final float sliderX = SLIDER_X + sawXPixels;
-        final float sliderY = BASE_SLIDER_Y + sawYPixels;
-
-        final float rodAngle = (float) Math.atan2(pinY - sliderY, pinX - sliderX);
+                // 1 full crankshaft revolution = 1 full down-up stroke of the saw frame
+                // Harmonic motion: starts at rest (0), descends to MAX_VERTICAL_STROKE, returns to 0
+                yOffset = -(1.0f - Mth.cos(angle)) * 0.5f * MAX_VERTICAL_STROKE;
+                xOffset = Mth.sin(angle) * MAX_HORIZONTAL_PITCH;
+            }
+        }
 
         poseStack.pushPose();
 
-        // 1. Align to center of block and rotate to match blockstate FACING
+        // 2. Align to center of block and rotate to match blockstate FACING
         poseStack.translate(0.5D, 0.0D, 0.5D);
         poseStack.mulPose(Axis.YN.rotationDegrees((facing.toYRot() + 180.0f) % 360.0f));
 
-        // --- Pass 1: Sawmill Frame, Housing, Blades & Rod (SAWMILL_TEXTURE) ---
+        // --- Pass 1: Reciprocating Saw Frame, Blade & Bilateral Flange ---
         final VertexConsumer frameBuffer = bufferSource.getBuffer(RenderType.entityCutoutNoCull(SawmillModelData.SAWMILL_TEXTURE));
 
-        // 2. Static Gearbox Housing
-        SawmillModelData.GEARBOX.render(poseStack, frameBuffer, packedLight, packedOverlay);
-
-        // 3. Eccentric Pin (rotates on the gear face)
-        poseStack.pushPose();
-        poseStack.translate(-3.0f, 1.5f, 0.09375f);
-        poseStack.mulPose(Axis.ZP.rotation(animAngle));
-        for (var cube : SawmillModelData.PIN) {
-            cube.render(poseStack, frameBuffer, packedLight, packedOverlay);
-        }
-        poseStack.popPose();
-
-        // 4. Reciprocating Saw Frame & Blade (Horizontally & Vertically animated)
         poseStack.pushPose();
         poseStack.translate(xOffset, yOffset, 0.0f);
+
+        // Render saw frame and teeth
         for (var cube : SawmillModelData.SAW) {
             cube.render(poseStack, frameBuffer, packedLight, packedOverlay);
         }
-        poseStack.popPose();
 
-        // 5. Oscillating Connecting Rod (Шатун)
-        poseStack.pushPose();
-        poseStack.translate(sliderX / 16.0f, sliderY / 16.0f, 0.0f);
-        poseStack.mulPose(Axis.ZP.rotation(rodAngle - (float) Math.PI));
-        for (var cube : SawmillModelData.ROD) {
-            cube.render(poseStack, frameBuffer, packedLight, packedOverlay);
+        // Render mounting flange on the connection side (or default left if not connected yet)
+        final SawmillBlockEntity.CrankSide side = sawmill.getCrankConnectionSide();
+        if (side == SawmillBlockEntity.CrankSide.RIGHT) {
+            for (var cube : SawmillModelData.FLANGE_RIGHT) {
+                cube.render(poseStack, frameBuffer, packedLight, packedOverlay);
+            }
+        } else {
+            for (var cube : SawmillModelData.FLANGE_LEFT) {
+                cube.render(poseStack, frameBuffer, packedLight, packedOverlay);
+            }
         }
+
         poseStack.popPose();
 
-        // --- Pass 2: Rotating Brass Gear (GEAR_TEXTURE) ---
-        final VertexConsumer gearBuffer = bufferSource.getBuffer(RenderType.entityCutoutNoCull(SawmillModelData.GEAR_TEXTURE));
-        poseStack.pushPose();
-        poseStack.translate(-3.0f, 1.5f, 0.09375f);
-        poseStack.mulPose(Axis.ZP.rotation(animAngle));
-        for (var cube : SawmillModelData.BRASS_GEAR) {
-            cube.render(poseStack, gearBuffer, packedLight, packedOverlay);
-        }
-        poseStack.popPose();
-
-        // --- Pass 3: Direct Item Input 3D Multi-Log Rendering ---
+        // --- Pass 2: Direct Item Input 3D Multi-Log Rendering ---
         if (sawmill.hasInputItem()) {
             final net.minecraft.world.item.ItemStack input = sawmill.getInputItem();
             final BlockState logState = resolveBlockStateForInput(input);

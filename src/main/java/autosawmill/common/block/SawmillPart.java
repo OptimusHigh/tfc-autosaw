@@ -4,9 +4,7 @@ import net.minecraft.util.StringRepresentable;
 
 public enum SawmillPart implements StringRepresentable {
     BED("bed"),
-    FRAME_TOP("frame_top"),
-    GEARBOX_LOWER("gearbox_lower"),
-    GEARBOX_UPPER("gearbox_upper");
+    FRAME_TOP("frame_top");
 
     private final String name;
 

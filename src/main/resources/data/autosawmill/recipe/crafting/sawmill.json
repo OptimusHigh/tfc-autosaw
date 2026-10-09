@@ -2,7 +2,7 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "pattern": [
-    "LGL",
+    "LRL",
     "LBL",
     "LML"
   ],
@@ -10,9 +10,17 @@
     "L": {
       "tag": "tfc:lumber"
     },
-    "G": {
-      "tag": "c:gears/brass"
-    },
+    "R": [
+      {
+        "tag": "c:rods/steel"
+      },
+      {
+        "tag": "c:rods/wrought_iron"
+      },
+      {
+        "tag": "c:rods/cast_iron"
+      }
+    ],
     "B": {
       "item": "autosawmill:saw_blade"
     },

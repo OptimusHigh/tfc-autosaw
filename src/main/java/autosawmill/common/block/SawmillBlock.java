@@ -37,9 +37,8 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * The Sawmill device block. Sits above the wood material block.
- * Connects to the TFC kinetic network at the rear (facing.getOpposite()).
- * Implements full 4-block multiblock structure so all parts (bed, upper frame, gearbox)
- * are interactable and targetable anywhere on the machine.
+ * Driven by an external native TFC crankshaft connected to either side.
+ * Implements a 1x1x2 multiblock structure (bed + frame_top).
  */
 public class SawmillBlock extends ExtendedBlock implements IForgeBlockExtension, EntityBlockExtension {
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
@@ -54,25 +53,14 @@ public class SawmillBlock extends ExtendedBlock implements IForgeBlockExtension,
         net.dries007.tfc.util.Helpers.rotateShape(dir, 0, 0, 5, 16, 14, 11)
     );
 
-    private static final VoxelShape[] GEARBOX_SHAPES = net.dries007.tfc.util.Helpers.computeHorizontalShapes(dir ->
-        net.dries007.tfc.util.Helpers.rotateShape(dir, 0, 0, 2, 16, 16, 14)
-    );
-
     public SawmillBlock(ExtendedProperties properties) {
         super(properties);
         registerDefaultState(getStateDefinition().any().setValue(FACING, Direction.NORTH).setValue(PART, SawmillPart.BED));
     }
 
     public static BlockPos getBedPos(BlockPos pos, BlockState state) {
-        if (!state.hasProperty(PART) || !state.hasProperty(FACING)) return pos;
-        final Direction facing = state.getValue(FACING);
-        final Direction side = facing.getCounterClockWise();
-        return switch (state.getValue(PART)) {
-            case BED -> pos;
-            case FRAME_TOP -> pos.below();
-            case GEARBOX_LOWER -> pos.relative(side.getOpposite(), 3);
-            case GEARBOX_UPPER -> pos.relative(side.getOpposite(), 3).below();
-        };
+        if (!state.hasProperty(PART)) return pos;
+        return state.getValue(PART) == SawmillPart.FRAME_TOP ? pos.below() : pos;
     }
 
     @Nullable
@@ -81,15 +69,9 @@ public class SawmillBlock extends ExtendedBlock implements IForgeBlockExtension,
         final Level level = context.getLevel();
         final BlockPos pos = context.getClickedPos();
         final Direction facing = context.getHorizontalDirection().getOpposite();
-        final Direction side = facing.getCounterClockWise();
-
         final BlockPos topPos = pos.above();
-        final BlockPos gbLowerPos = pos.relative(side, 3);
-        final BlockPos gbUpperPos = gbLowerPos.above();
 
-        if (!level.getBlockState(topPos).canBeReplaced(context) ||
-            !level.getBlockState(gbLowerPos).canBeReplaced(context) ||
-            !level.getBlockState(gbUpperPos).canBeReplaced(context)) {
+        if (!level.getBlockState(topPos).canBeReplaced(context)) {
             return null;
         }
         return defaultBlockState().setValue(FACING, facing).setValue(PART, SawmillPart.BED);
@@ -99,15 +81,8 @@ public class SawmillBlock extends ExtendedBlock implements IForgeBlockExtension,
     public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity entity, ItemStack stack) {
         super.setPlacedBy(level, pos, state, entity, stack);
         if (!level.isClientSide() && state.getValue(PART) == SawmillPart.BED) {
-            final Direction facing = state.getValue(FACING);
-            final Direction side = facing.getCounterClockWise();
             final BlockPos topPos = pos.above();
-            final BlockPos gbLowerPos = pos.relative(side, 3);
-            final BlockPos gbUpperPos = gbLowerPos.above();
-
             level.setBlockAndUpdate(topPos, state.setValue(PART, SawmillPart.FRAME_TOP));
-            level.setBlockAndUpdate(gbLowerPos, state.setValue(PART, SawmillPart.GEARBOX_LOWER));
-            level.setBlockAndUpdate(gbUpperPos, state.setValue(PART, SawmillPart.GEARBOX_UPPER));
         }
     }
 
@@ -120,17 +95,10 @@ public class SawmillBlock extends ExtendedBlock implements IForgeBlockExtension,
                 if (!player.isCreative()) {
                     dropResources(bedState, level, bedPos, level.getBlockEntity(bedPos), player, player.getMainHandItem());
                 }
-                final Direction facing = bedState.getValue(FACING);
-                final Direction side = facing.getCounterClockWise();
                 final BlockPos topPos = bedPos.above();
-                final BlockPos gbLowerPos = bedPos.relative(side, 3);
-                final BlockPos gbUpperPos = gbLowerPos.above();
-
-                final BlockPos[] allParts = new BlockPos[] {bedPos, topPos, gbLowerPos, gbUpperPos};
-                for (BlockPos p : allParts) {
-                    if (!p.equals(pos) && level.getBlockState(p).is(this)) {
-                        level.setBlock(p, Blocks.AIR.defaultBlockState(), 35);
-                    }
+                final BlockPos partnerPos = pos.equals(bedPos) ? topPos : bedPos;
+                if (level.getBlockState(partnerPos).is(this)) {
+                    level.setBlock(partnerPos, Blocks.AIR.defaultBlockState(), 35);
                 }
             }
         }
@@ -229,17 +197,14 @@ public class SawmillBlock extends ExtendedBlock implements IForgeBlockExtension,
                         net.minecraft.world.Containers.dropItemStack(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, stack);
                     }
                 }
-                final Direction facing = state.getValue(FACING);
-                final Direction side = facing.getCounterClockWise();
-                final BlockPos[] allParts = new BlockPos[] {
-                    pos.above(),
-                    pos.relative(side, 3),
-                    pos.relative(side, 3).above()
-                };
-                for (BlockPos p : allParts) {
-                    if (level.getBlockState(p).is(this)) {
-                        level.setBlock(p, Blocks.AIR.defaultBlockState(), 35);
-                    }
+                final BlockPos topPos = pos.above();
+                if (level.getBlockState(topPos).is(this)) {
+                    level.setBlock(topPos, Blocks.AIR.defaultBlockState(), 35);
+                }
+            } else if (state.getValue(PART) == SawmillPart.FRAME_TOP) {
+                final BlockPos bedPos = pos.below();
+                if (level.getBlockState(bedPos).is(this)) {
+                    level.setBlock(bedPos, Blocks.AIR.defaultBlockState(), 35);
                 }
             }
         }
@@ -259,10 +224,6 @@ public class SawmillBlock extends ExtendedBlock implements IForgeBlockExtension,
     @Override
     protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         int idx = state.getValue(FACING).get2DDataValue();
-        return switch (state.getValue(PART)) {
-            case BED -> BED_SHAPES[idx];
-            case FRAME_TOP -> TOP_SHAPES[idx];
-            case GEARBOX_LOWER, GEARBOX_UPPER -> GEARBOX_SHAPES[idx];
-        };
+        return state.getValue(PART) == SawmillPart.BED ? BED_SHAPES[idx] : TOP_SHAPES[idx];
     }
 }

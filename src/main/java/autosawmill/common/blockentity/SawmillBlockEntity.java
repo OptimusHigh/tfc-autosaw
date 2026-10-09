@@ -4,11 +4,9 @@ import autosawmill.common.block.SawmillBlock;
 import autosawmill.common.util.OutputRouter;
 import autosawmill.common.util.WoodHelper;
 import net.dries007.tfc.common.blockentities.TFCBlockEntity;
-import net.dries007.tfc.common.blockentities.rotation.RotationSinkBlockEntity;
-import net.dries007.tfc.util.rotation.NetworkAction;
-import net.dries007.tfc.util.rotation.Node;
+import net.dries007.tfc.common.blockentities.rotation.CrankshaftBlockEntity;
+import net.dries007.tfc.common.blocks.rotation.CrankshaftBlock;
 import net.dries007.tfc.util.rotation.Rotation;
-import net.dries007.tfc.util.rotation.SinkNode;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
@@ -20,18 +18,18 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
 /**
  * BlockEntity for the Sawmill.
- * Integrates into TFC's mechanical rotation network as a RotationSinkBlockEntity.
+ * Powered by a native TFC crankshaft connected to either the left or right side.
  */
-public class SawmillBlockEntity extends TFCBlockEntity implements RotationSinkBlockEntity {
+public class SawmillBlockEntity extends TFCBlockEntity {
     public static final float PROGRESS_MODIFIER = 10.0f;
     public static final float DEFAULT_MAX_PROGRESS = 8.0f * (float) Math.PI * PROGRESS_MODIFIER;
 
-    private final Node node;
     private ItemStack inputStack = ItemStack.EMPTY;
     private float progress = 0.0f;
     private float maxProgress = DEFAULT_MAX_PROGRESS;
@@ -43,16 +41,6 @@ public class SawmillBlockEntity extends TFCBlockEntity implements RotationSinkBl
 
     public SawmillBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.SAWMILL.get(), pos, state);
-
-        final Direction facing = state.getValue(SawmillBlock.FACING);
-        final Direction connection = facing.getOpposite();
-
-        this.node = new SinkNode(pos, connection) {
-            @Override
-            public String toString() {
-                return "Sawmill[pos=%s]".formatted(pos());
-            }
-        };
     }
 
     public static void serverTick(Level level, BlockPos pos, BlockState state, SawmillBlockEntity sawmill) {
@@ -78,6 +66,86 @@ public class SawmillBlockEntity extends TFCBlockEntity implements RotationSinkBl
             return net.minecraft.util.Mth.lerp(partialTick, prevContinuousAngle, continuousAngle);
         }
         return continuousAngle;
+    }
+
+    /**
+     * Finds connected native TFC crankshaft on either side (left/CCW or right/CW),
+     * checking both at bed level and upper frame level.
+     */
+    @Nullable
+    public CrankshaftBlockEntity getCrankBlockEntity() {
+        if (level == null) return null;
+        final BlockState state = getBlockState();
+        if (!state.hasProperty(SawmillBlock.FACING)) return null;
+
+        final Direction facing = state.getValue(SawmillBlock.FACING);
+        final Direction ccw = facing.getCounterClockWise();
+        final Direction cw = facing.getClockWise();
+
+        // 1. Lower level (worldPosition / BED) - check left then right
+        CrankshaftBlockEntity crank = CrankshaftBlockEntity.getCrankShaftAt(level, worldPosition, ccw);
+        if (crank != null) return crank;
+
+        crank = CrankshaftBlockEntity.getCrankShaftAt(level, worldPosition, cw);
+        if (crank != null) return crank;
+
+        // 2. Upper level (worldPosition.above() / FRAME_TOP) - check left then right
+        final BlockPos topPos = worldPosition.above();
+        crank = CrankshaftBlockEntity.getCrankShaftAt(level, topPos, ccw);
+        if (crank != null) return crank;
+
+        return CrankshaftBlockEntity.getCrankShaftAt(level, topPos, cw);
+    }
+
+    public enum CrankSide {
+        LEFT, RIGHT, NONE
+    }
+
+    public CrankSide getCrankConnectionSide() {
+        if (level == null) return CrankSide.NONE;
+        final BlockState state = getBlockState();
+        if (!state.hasProperty(SawmillBlock.FACING)) return CrankSide.NONE;
+
+        final Direction facing = state.getValue(SawmillBlock.FACING);
+        final Direction ccw = facing.getCounterClockWise();
+        final Direction cw = facing.getClockWise();
+
+        if (CrankshaftBlockEntity.getCrankShaftAt(level, worldPosition, ccw) != null
+            || CrankshaftBlockEntity.getCrankShaftAt(level, worldPosition.above(), ccw) != null) {
+            return CrankSide.LEFT;
+        }
+
+        if (CrankshaftBlockEntity.getCrankShaftAt(level, worldPosition, cw) != null
+            || CrankshaftBlockEntity.getCrankShaftAt(level, worldPosition.above(), cw) != null) {
+            return CrankSide.RIGHT;
+        }
+
+        return CrankSide.NONE;
+    }
+
+    @Nullable
+    public Rotation getCrankRotation() {
+        final CrankshaftBlockEntity crank = getCrankBlockEntity();
+        return crank != null && crank.getRotationNode() != null ? crank.getRotationNode().rotation() : null;
+    }
+
+    @Nullable
+    public Rotation getActiveRotation() {
+        return getCrankRotation();
+    }
+
+    public boolean hasKineticPower() {
+        final Rotation rot = getCrankRotation();
+        return rot != null && Math.abs(rot.speed()) > 0.001f;
+    }
+
+    public float getRotationAngle(float partialTick) {
+        final CrankshaftBlockEntity crank = getCrankBlockEntity();
+        if (crank != null) {
+            final Direction face = crank.getBlockState().getValue(CrankshaftBlock.FACING);
+            return CrankshaftBlockEntity.calculateRealRotationAngle(crank, face, partialTick);
+        }
+        return 0.0f;
     }
 
     public boolean hasInputItem() {
@@ -219,48 +287,6 @@ public class SawmillBlockEntity extends TFCBlockEntity implements RotationSinkBl
         return alternation;
     }
 
-    public boolean hasKineticPower() {
-        return getActiveRotation() != null;
-    }
-
-    public @org.jetbrains.annotations.Nullable Rotation getActiveRotation() {
-        if (node.rotation() != null && Math.abs(node.rotation().speed()) > 0.001f) {
-            return node.rotation();
-        }
-        if (level == null) return null;
-        final Direction facing = getBlockState().getValue(SawmillBlock.FACING);
-        final BlockPos ccwPos = worldPosition.relative(facing.getCounterClockWise(), 3);
-        final BlockPos cwPos = worldPosition.relative(facing.getClockWise(), 3);
-        final BlockPos rearPos = worldPosition.relative(facing.getOpposite());
-
-        final BlockPos[] checkPositions = new BlockPos[] {
-            rearPos,                                       // Directly behind machine bed
-            rearPos.above(),                               // Directly behind upper frame
-            ccwPos.above().relative(facing.getOpposite()), // Behind upper gearbox
-            ccwPos.relative(facing.getOpposite()),         // Behind lower gearbox
-            ccwPos.above(),                                // At upper gearbox
-            ccwPos,                                        // At lower gearbox
-            cwPos.above().relative(facing.getOpposite()),  // Opposite side upper
-            cwPos.relative(facing.getOpposite()),          // Opposite side lower
-            worldPosition.above()                          // Directly above frame
-        };
-        for (BlockPos p : checkPositions) {
-            if (level.getBlockEntity(p) instanceof net.dries007.tfc.common.blockentities.rotation.RotatingBlockEntity rotating) {
-                final Node rNode = rotating.getRotationNode();
-                if (rNode != null && rNode.rotation() != null && Math.abs(rNode.rotation().speed()) > 0.001f) {
-                    return rNode.rotation();
-                }
-            }
-        }
-        return null;
-    }
-
-    @Override
-    public float getRotationAngle(float partialTick) {
-        final Rotation rot = getActiveRotation();
-        return rot != null ? Rotation.angle(rot, partialTick) : 0.0f;
-    }
-
     public float getProgress() {
         return progress;
     }
@@ -271,21 +297,6 @@ public class SawmillBlockEntity extends TFCBlockEntity implements RotationSinkBl
 
     public boolean isJammed() {
         return isJammed;
-    }
-
-    @Override
-    public Node getRotationNode() {
-        return node;
-    }
-
-    @Override
-    protected void onLoadAdditional() {
-        performNetworkAction(NetworkAction.ADD);
-    }
-
-    @Override
-    protected void onUnloadAdditional() {
-        performNetworkAction(NetworkAction.REMOVE);
     }
 
     @Override
