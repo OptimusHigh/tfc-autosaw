@@ -28,10 +28,12 @@ import net.minecraft.world.phys.AABB;
  */
 public class SawmillBlockEntityRenderer implements BlockEntityRenderer<SawmillBlockEntity> {
 
-    // Maximum vertical stroke: 12 pixels = 0.75 blocks
-    private static final float MAX_VERTICAL_STROKE = 12.0f / 16.0f;
-    // Subtle horizontal pitch: 1.2 pixels = 0.075 blocks
-    private static final float MAX_HORIZONTAL_PITCH = 1.2f / 16.0f;
+    // Maximum cutting descent: ~7.5 pixels = 0.46875 blocks (plunges blade teeth down through log stack)
+    private static final float MAX_CUT_DESCENT = 7.5f / 16.0f;
+    // Harmonic vibration amplitude from crankshaft: ~1.5 pixels
+    private static final float MAX_HARMONIC_VIBE = 1.5f / 16.0f;
+    // Horizontal pitch reciprocation driven by crankshaft: 1.0 pixel = 0.0625 blocks
+    private static final float MAX_HORIZONTAL_PITCH = 1.0f / 16.0f;
 
     public SawmillBlockEntityRenderer(BlockEntityRendererProvider.Context context) {
     }
@@ -53,7 +55,7 @@ public class SawmillBlockEntityRenderer implements BlockEntityRenderer<SawmillBl
         // 1. Calculate analytical displacement directly from native TFC crankshaft
         final CrankshaftBlockEntity crank = sawmill.getCrankBlockEntity();
         float xOffset = 0.0f;
-        float yOffset = 0.0f;
+        float yVibe = 0.0f;
 
         if (crank != null) {
             final Rotation rot = crank.getRotationNode().rotation();
@@ -63,39 +65,101 @@ public class SawmillBlockEntityRenderer implements BlockEntityRenderer<SawmillBl
                 final Direction crankFace = crank.getBlockState().getValue(CrankshaftBlock.FACING);
                 final float angle = CrankshaftBlockEntity.calculateRealRotationAngle(crank, crankFace, partialTick);
 
-                // 1 full crankshaft revolution = 1 full down-up stroke of the saw frame
-                // Harmonic motion: starts at rest (0), descends to MAX_VERTICAL_STROKE, returns to 0
-                yOffset = -(1.0f - Mth.cos(angle)) * 0.5f * MAX_VERTICAL_STROKE;
+                // Horizontal reciprocation driven by crankshaft piston
                 xOffset = Mth.sin(angle) * MAX_HORIZONTAL_PITCH;
+                // Harmonic vibration
+                yVibe = -(1.0f - Mth.cos(angle)) * 0.5f * MAX_HARMONIC_VIBE;
             }
         }
 
+        // 2. Cutting stroke animation: saw blade plunges down through the log (0%..80%),
+        // then smoothly returns up to starting position (80%..100%).
+        float cutDescent = 0.0f;
+        if (sawmill.hasInputItem() && sawmill.hasBlade()) {
+            final float currentProg = sawmill.getInterpolatedCutProgress(partialTick);
+            final float maxProg = sawmill.getMaxProgress();
+            final float frac = Mth.clamp(currentProg / Math.max(1.0f, maxProg), 0.0f, 1.0f);
+
+            if (frac <= 0.80f) {
+                cutDescent = (frac / 0.80f) * MAX_CUT_DESCENT;
+            } else {
+                float returnFrac = (frac - 0.80f) / 0.20f;
+                float smoothReturn = 0.5f * (1.0f + Mth.cos(returnFrac * (float) Math.PI));
+                cutDescent = smoothReturn * MAX_CUT_DESCENT;
+            }
+        }
+
+        final float yOffset = -cutDescent + yVibe;
+
         poseStack.pushPose();
 
-        // 2. Align to center of block and rotate to match blockstate FACING
+        // 3. Align to center of block and rotate to match blockstate FACING
         poseStack.translate(0.5D, 0.0D, 0.5D);
         poseStack.mulPose(Axis.YN.rotationDegrees((facing.toYRot() + 180.0f) % 360.0f));
 
-        // --- Pass 1: Reciprocating Saw Frame, Blade & Bilateral Flange ---
+        // --- Pass 1: Reciprocating Saw Frame Carriage, Blade & Continuous Drive Linkage ---
         final VertexConsumer frameBuffer = bufferSource.getBuffer(RenderType.entityCutoutNoCull(SawmillModelData.SAWMILL_TEXTURE));
 
         poseStack.pushPose();
         poseStack.translate(xOffset, yOffset, 0.0f);
 
-        // Render saw frame and teeth
-        for (var cube : SawmillModelData.SAW) {
+        // A. Always render the inner movable frame carriage
+        for (var cube : SawmillModelData.MOVING_FRAME) {
             cube.render(poseStack, frameBuffer, packedLight, packedOverlay);
         }
 
-        // Render mounting flange on the connection side (or default left if not connected yet)
-        final SawmillBlockEntity.CrankSide side = sawmill.getCrankConnectionSide();
-        if (side == SawmillBlockEntity.CrankSide.RIGHT) {
-            for (var cube : SawmillModelData.FLANGE_RIGHT) {
+        // B. Render the saw blade ONLY if a blade is installed in the sawmill
+        if (sawmill.hasBlade()) {
+            for (var cube : SawmillModelData.BLADE) {
                 cube.render(poseStack, frameBuffer, packedLight, packedOverlay);
             }
+        }
+
+        // C. Render mounting flange & continuous drive linkage towards crankshaft
+        final SawmillBlockEntity.CrankSide side = sawmill.getCrankConnectionSide();
+        final boolean hasCrank = (crank != null);
+        final boolean isUpper = (hasCrank && crank.getBlockPos().getY() > sawmill.getBlockPos().getY());
+
+        if (side == SawmillBlockEntity.CrankSide.RIGHT) {
+            if (isUpper) {
+                for (var cube : SawmillModelData.FLANGE_RIGHT) {
+                    cube.render(poseStack, frameBuffer, packedLight, packedOverlay);
+                }
+                if (hasCrank) {
+                    for (var cube : SawmillModelData.DRIVE_LINKAGE_RIGHT) {
+                        cube.render(poseStack, frameBuffer, packedLight, packedOverlay);
+                    }
+                }
+            } else {
+                for (var cube : SawmillModelData.FLANGE_LOWER_RIGHT) {
+                    cube.render(poseStack, frameBuffer, packedLight, packedOverlay);
+                }
+                if (hasCrank) {
+                    for (var cube : SawmillModelData.DRIVE_LINKAGE_LOWER_RIGHT) {
+                        cube.render(poseStack, frameBuffer, packedLight, packedOverlay);
+                    }
+                }
+            }
         } else {
-            for (var cube : SawmillModelData.FLANGE_LEFT) {
-                cube.render(poseStack, frameBuffer, packedLight, packedOverlay);
+            // Default LEFT (matching user's setup)
+            if (isUpper) {
+                for (var cube : SawmillModelData.FLANGE_LEFT) {
+                    cube.render(poseStack, frameBuffer, packedLight, packedOverlay);
+                }
+                if (hasCrank) {
+                    for (var cube : SawmillModelData.DRIVE_LINKAGE_LEFT) {
+                        cube.render(poseStack, frameBuffer, packedLight, packedOverlay);
+                    }
+                }
+            } else {
+                for (var cube : SawmillModelData.FLANGE_LOWER_LEFT) {
+                    cube.render(poseStack, frameBuffer, packedLight, packedOverlay);
+                }
+                if (hasCrank) {
+                    for (var cube : SawmillModelData.DRIVE_LINKAGE_LOWER_LEFT) {
+                        cube.render(poseStack, frameBuffer, packedLight, packedOverlay);
+                    }
+                }
             }
         }
 

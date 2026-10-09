@@ -94,6 +94,9 @@ public class SawmillBlock extends ExtendedBlock implements IForgeBlockExtension,
             if (bedState.is(this) && bedState.getValue(PART) == SawmillPart.BED) {
                 if (!player.isCreative()) {
                     dropResources(bedState, level, bedPos, level.getBlockEntity(bedPos), player, player.getMainHandItem());
+                    if (level.getBlockEntity(bedPos) instanceof SawmillBlockEntity sawmill && sawmill.hasBlade()) {
+                        net.minecraft.world.Containers.dropItemStack(level, bedPos.getX() + 0.5, bedPos.getY() + 0.5, bedPos.getZ() + 0.5, sawmill.extractBlade());
+                    }
                 }
                 final BlockPos topPos = bedPos.above();
                 final BlockPos partnerPos = pos.equals(bedPos) ? topPos : bedPos;
@@ -137,36 +140,67 @@ public class SawmillBlock extends ExtendedBlock implements IForgeBlockExtension,
     protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hitResult) {
         final BlockPos bedPos = getBedPos(pos, state);
         if (level.getBlockEntity(bedPos) instanceof SawmillBlockEntity sawmill) {
-            // 1. Shift + Right Click with empty hand: extract item
+            // 1. Right Click with Saw Blade: install into sawmill
+            if (!stack.isEmpty() && autosawmill.common.util.WoodHelper.isSawBlade(stack)) {
+                if (!sawmill.hasBlade()) {
+                    if (!level.isClientSide()) {
+                        if (sawmill.insertBlade(stack)) {
+                            if (!player.isCreative()) {
+                                stack.shrink(1);
+                            }
+                            level.playSound(null, bedPos, net.minecraft.sounds.SoundEvents.ARMOR_EQUIP_IRON.value(), net.minecraft.sounds.SoundSource.BLOCKS, 0.8f, 1.0f);
+                        }
+                    }
+                    return ItemInteractionResult.sidedSuccess(level.isClientSide());
+                }
+            }
+
+            // 2. Shift + Right Click with empty hand: extract log first, or blade if no log
             if (player.isShiftKeyDown() && stack.isEmpty()) {
                 if (!level.isClientSide()) {
-                    final ItemStack extracted = sawmill.extractItem();
-                    if (!extracted.isEmpty()) {
-                        if (!player.getInventory().add(extracted)) {
-                            player.drop(extracted, false);
+                    if (sawmill.hasInputItem()) {
+                        final ItemStack extracted = sawmill.extractItem();
+                        if (!extracted.isEmpty()) {
+                            if (!player.getInventory().add(extracted)) {
+                                player.drop(extracted, false);
+                            }
+                            level.playSound(null, bedPos, net.minecraft.sounds.SoundEvents.ITEM_PICKUP, net.minecraft.sounds.SoundSource.PLAYERS, 0.6f, 1.2f);
                         }
-                        level.playSound(null, bedPos, net.minecraft.sounds.SoundEvents.ITEM_PICKUP, net.minecraft.sounds.SoundSource.PLAYERS, 0.6f, 1.2f);
+                    } else if (sawmill.hasBlade()) {
+                        final ItemStack extractedBlade = sawmill.extractBlade();
+                        if (!extractedBlade.isEmpty()) {
+                            if (!player.getInventory().add(extractedBlade)) {
+                                player.drop(extractedBlade, false);
+                            }
+                            level.playSound(null, bedPos, net.minecraft.sounds.SoundEvents.ARMOR_EQUIP_GENERIC.value(), net.minecraft.sounds.SoundSource.PLAYERS, 0.8f, 1.2f);
+                        }
                     }
                 }
                 return ItemInteractionResult.sidedSuccess(level.isClientSide());
             }
 
-            // 2. Right Click with valid wood item: insert into sawmill
+            // 3. Right Click with valid wood item: insert into sawmill
             if (!stack.isEmpty() && autosawmill.common.util.WoodHelper.isValidInput(stack)) {
                 if (!level.isClientSide()) {
-                    final int countToInsert = player.isShiftKeyDown() ? stack.getCount() : 1;
-                    final int inserted = sawmill.insertItem(stack, countToInsert);
-                    if (inserted > 0) {
-                        stack.shrink(inserted);
-                        level.playSound(null, bedPos, net.minecraft.sounds.SoundEvents.WOOD_PLACE, net.minecraft.sounds.SoundSource.BLOCKS, 0.8f, 1.0f);
+                    if (!sawmill.hasBlade()) {
+                        player.displayClientMessage(Component.translatable("autosawmill.status.no_blade"), true);
+                    } else {
+                        final int countToInsert = player.isShiftKeyDown() ? stack.getCount() : 1;
+                        final int inserted = sawmill.insertItem(stack, countToInsert);
+                        if (inserted > 0) {
+                            stack.shrink(inserted);
+                            level.playSound(null, bedPos, net.minecraft.sounds.SoundEvents.WOOD_PLACE, net.minecraft.sounds.SoundSource.BLOCKS, 0.8f, 1.0f);
+                        }
                     }
                 }
                 return ItemInteractionResult.sidedSuccess(level.isClientSide());
             }
 
-            // 3. Right Click empty hand or other item: status info
+            // 4. Right Click empty hand or other item: status info
             if (!level.isClientSide() && hand == InteractionHand.MAIN_HAND) {
-                if (sawmill.isJammed()) {
+                if (!sawmill.hasBlade()) {
+                    player.displayClientMessage(Component.translatable("autosawmill.status.no_blade"), true);
+                } else if (sawmill.isJammed()) {
                     player.displayClientMessage(Component.translatable("autosawmill.status.jammed"), true);
                 } else if (!sawmill.hasKineticPower()) {
                     player.displayClientMessage(Component.translatable("autosawmill.status.no_power"), true);
@@ -195,6 +229,9 @@ public class SawmillBlock extends ExtendedBlock implements IForgeBlockExtension,
                     final ItemStack stack = sawmill.extractItem();
                     if (!stack.isEmpty()) {
                         net.minecraft.world.Containers.dropItemStack(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, stack);
+                    }
+                    if (sawmill.hasBlade()) {
+                        net.minecraft.world.Containers.dropItemStack(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, sawmill.extractBlade());
                     }
                 }
                 final BlockPos topPos = pos.above();

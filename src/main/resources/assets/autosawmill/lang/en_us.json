@@ -4,8 +4,9 @@
   "item.autosawmill.brass_gear": "Brass Gear",
   "block.autosawmill.support_pile": "Support Pile",
   "block.autosawmill.sawmill": "Automatic Sawmill",
+  "autosawmill.status.no_blade": "No saw blade installed! Insert a saw blade (Right-Click with blade in hand).",
   "autosawmill.status.jammed": "Sawmill is jammed! Clear the sides or empty the container.",
-  "autosawmill.status.no_power": "No mechanical power (connect a TFC axle at the rear behind the blade or behind the gear to the right).",
+  "autosawmill.status.no_power": "No mechanical power (connect a TFC crankshaft to the side of the frame).",
   "autosawmill.status.cutting": "Sawing in progress: %d%%",
   "autosawmill.status.cutting_item": "Sawing %s: %d%%",
   "autosawmill.status.idle": "Sawmill ready. Insert log (Right Click) or place a block directly under the saw blade."

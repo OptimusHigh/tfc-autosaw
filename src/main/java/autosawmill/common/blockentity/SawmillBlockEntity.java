@@ -31,6 +31,7 @@ public class SawmillBlockEntity extends TFCBlockEntity {
     public static final float DEFAULT_MAX_PROGRESS = 8.0f * (float) Math.PI * PROGRESS_MODIFIER;
 
     private ItemStack inputStack = ItemStack.EMPTY;
+    private ItemStack bladeStack = ItemStack.EMPTY;
     private float progress = 0.0f;
     private float maxProgress = DEFAULT_MAX_PROGRESS;
     private boolean isJammed = false;
@@ -38,6 +39,8 @@ public class SawmillBlockEntity extends TFCBlockEntity {
 
     private float prevContinuousAngle = 0.0f;
     private float continuousAngle = 0.0f;
+    private float prevCutProgress = 0.0f;
+    private float cutProgress = 0.0f;
 
     public SawmillBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.SAWMILL.get(), pos, state);
@@ -50,7 +53,8 @@ public class SawmillBlockEntity extends TFCBlockEntity {
     public static void clientTick(Level level, BlockPos pos, BlockState state, SawmillBlockEntity sawmill) {
         sawmill.prevContinuousAngle = sawmill.continuousAngle;
         final Rotation rot = sawmill.getActiveRotation();
-        if (rot != null && Math.abs(rot.speed()) > 0.001f) {
+        final boolean isRotating = rot != null && Math.abs(rot.speed()) > 0.001f;
+        if (isRotating) {
             sawmill.continuousAngle += Math.abs(rot.speed());
             final float twoPi4 = 8.0f * (float) Math.PI;
             if (sawmill.continuousAngle >= twoPi4) {
@@ -58,6 +62,25 @@ public class SawmillBlockEntity extends TFCBlockEntity {
                 sawmill.prevContinuousAngle -= twoPi4;
             }
         }
+
+        sawmill.prevCutProgress = sawmill.cutProgress;
+        if (sawmill.hasInputItem() && sawmill.hasBlade() && isRotating && !sawmill.isJammed) {
+            final float speed = Math.abs(rot.speed());
+            sawmill.cutProgress += speed * PROGRESS_MODIFIER;
+            if (sawmill.cutProgress >= sawmill.maxProgress) {
+                sawmill.cutProgress = 0.0f;
+                sawmill.prevCutProgress = 0.0f;
+            }
+        } else if (!sawmill.hasInputItem() || !sawmill.hasBlade()) {
+            sawmill.cutProgress = Math.max(0.0f, sawmill.cutProgress - 5.0f);
+        }
+    }
+
+    public float getInterpolatedCutProgress(float partialTick) {
+        if (!hasInputItem() || !hasBlade()) {
+            return 0.0f;
+        }
+        return net.minecraft.util.Mth.lerp(partialTick, prevCutProgress, cutProgress);
     }
 
     public float getContinuousAngle(float partialTick) {
@@ -70,7 +93,8 @@ public class SawmillBlockEntity extends TFCBlockEntity {
 
     /**
      * Finds connected native TFC crankshaft on either side (left/CCW or right/CW),
-     * checking both at bed level and upper frame level.
+     * checking both outer frame post distance and direct distance, at BED and FRAME_TOP levels.
+     * Prioritizes actively rotating crankshafts if multiple are connected.
      */
     @Nullable
     public CrankshaftBlockEntity getCrankBlockEntity() {
@@ -81,20 +105,36 @@ public class SawmillBlockEntity extends TFCBlockEntity {
         final Direction facing = state.getValue(SawmillBlock.FACING);
         final Direction ccw = facing.getCounterClockWise();
         final Direction cw = facing.getClockWise();
-
-        // 1. Lower level (worldPosition / BED) - check left then right
-        CrankshaftBlockEntity crank = CrankshaftBlockEntity.getCrankShaftAt(level, worldPosition, ccw);
-        if (crank != null) return crank;
-
-        crank = CrankshaftBlockEntity.getCrankShaftAt(level, worldPosition, cw);
-        if (crank != null) return crank;
-
-        // 2. Upper level (worldPosition.above() / FRAME_TOP) - check left then right
+        final BlockPos bedPos = worldPosition;
         final BlockPos topPos = worldPosition.above();
-        crank = CrankshaftBlockEntity.getCrankShaftAt(level, topPos, ccw);
-        if (crank != null) return crank;
 
-        return CrankshaftBlockEntity.getCrankShaftAt(level, topPos, cw);
+        final Direction[] sides = new Direction[] {cw, ccw};
+        CrankshaftBlockEntity firstConnected = null;
+
+        for (Direction side : sides) {
+            // Check frame post connection (distance 2/3) first, then direct connection (distance 1/2)
+            final BlockPos[] queryPositions = new BlockPos[] {
+                topPos.relative(side),
+                bedPos.relative(side),
+                topPos,
+                bedPos
+            };
+
+            for (BlockPos qPos : queryPositions) {
+                final CrankshaftBlockEntity crank = CrankshaftBlockEntity.getCrankShaftAt(level, qPos, side);
+                if (crank != null) {
+                    final Rotation rot = crank.getRotationNode() != null ? crank.getRotationNode().rotation() : null;
+                    if (rot != null && Math.abs(rot.speed()) > 0.001f) {
+                        return crank; // Prioritize active running crankshaft
+                    }
+                    if (firstConnected == null) {
+                        firstConnected = crank;
+                    }
+                }
+            }
+        }
+
+        return firstConnected;
     }
 
     public enum CrankSide {
@@ -102,22 +142,25 @@ public class SawmillBlockEntity extends TFCBlockEntity {
     }
 
     public CrankSide getCrankConnectionSide() {
-        if (level == null) return CrankSide.NONE;
+        final CrankshaftBlockEntity crank = getCrankBlockEntity();
+        if (crank == null || level == null) return CrankSide.NONE;
+
         final BlockState state = getBlockState();
         if (!state.hasProperty(SawmillBlock.FACING)) return CrankSide.NONE;
 
         final Direction facing = state.getValue(SawmillBlock.FACING);
         final Direction ccw = facing.getCounterClockWise();
         final Direction cw = facing.getClockWise();
+        final BlockPos crankPos = crank.getBlockPos();
 
-        if (CrankshaftBlockEntity.getCrankShaftAt(level, worldPosition, ccw) != null
-            || CrankshaftBlockEntity.getCrankShaftAt(level, worldPosition.above(), ccw) != null) {
-            return CrankSide.LEFT;
-        }
+        final int dx = crankPos.getX() - worldPosition.getX();
+        final int dz = crankPos.getZ() - worldPosition.getZ();
 
-        if (CrankshaftBlockEntity.getCrankShaftAt(level, worldPosition, cw) != null
-            || CrankshaftBlockEntity.getCrankShaftAt(level, worldPosition.above(), cw) != null) {
+        if (dx * cw.getStepX() + dz * cw.getStepZ() > 0) {
             return CrankSide.RIGHT;
+        }
+        if (dx * ccw.getStepX() + dz * ccw.getStepZ() > 0) {
+            return CrankSide.LEFT;
         }
 
         return CrankSide.NONE;
@@ -189,7 +232,43 @@ public class SawmillBlockEntity extends TFCBlockEntity {
         return extracted;
     }
 
+    public boolean hasBlade() {
+        return !bladeStack.isEmpty();
+    }
+
+    public ItemStack getBlade() {
+        return bladeStack;
+    }
+
+    public boolean insertBlade(ItemStack stack) {
+        if (hasBlade() || stack.isEmpty() || !WoodHelper.isSawBlade(stack)) {
+            return false;
+        }
+        bladeStack = stack.copyWithCount(1);
+        markForSync();
+        return true;
+    }
+
+    public ItemStack extractBlade() {
+        if (!hasBlade()) {
+            return ItemStack.EMPTY;
+        }
+        final ItemStack extracted = bladeStack.copy();
+        bladeStack = ItemStack.EMPTY;
+        progress = 0.0f;
+        markForSync();
+        return extracted;
+    }
+
     private void tick(Level level, BlockPos pos, BlockState state) {
+        if (!hasBlade()) {
+            if (progress > 0) {
+                progress = 0;
+                markForSync();
+            }
+            return;
+        }
+
         final Rotation rotation = getActiveRotation();
         if (rotation == null) {
             if (progress > 0) {
@@ -306,17 +385,27 @@ public class SawmillBlockEntity extends TFCBlockEntity {
         if (!inputStack.isEmpty()) {
             tag.put("inputItem", inputStack.save(provider));
         }
+        if (!bladeStack.isEmpty()) {
+            tag.put("blade", bladeStack.save(provider));
+        }
         super.saveAdditional(tag, provider);
     }
 
     @Override
     public void loadAdditional(CompoundTag tag, HolderLookup.Provider provider) {
         this.progress = tag.getFloat("progress");
+        this.cutProgress = this.progress;
+        this.prevCutProgress = this.progress;
         this.isJammed = tag.getBoolean("jammed");
         if (tag.contains("inputItem")) {
             this.inputStack = ItemStack.parseOptional(provider, tag.getCompound("inputItem"));
         } else {
             this.inputStack = ItemStack.EMPTY;
+        }
+        if (tag.contains("blade")) {
+            this.bladeStack = ItemStack.parseOptional(provider, tag.getCompound("blade"));
+        } else {
+            this.bladeStack = ItemStack.EMPTY;
         }
         super.loadAdditional(tag, provider);
     }

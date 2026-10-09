@@ -47,6 +47,12 @@ public final class WoodHelper {
 
     public static final TagKey<Block> TFC_LOGS = TagKey.create(Registries.BLOCK, ResourceLocation.fromNamespaceAndPath(CompatManager.MOD_TFC, "logs"));
     public static final TagKey<Block> TFC_STRIPPED_LOGS = TagKey.create(Registries.BLOCK, ResourceLocation.fromNamespaceAndPath(CompatManager.MOD_TFC, "stripped_logs"));
+    public static final TagKey<Item> SAW_BLADES = TagKey.create(Registries.ITEM, ResourceLocation.fromNamespaceAndPath("c", "saw_blades"));
+
+    public static boolean isSawBlade(ItemStack stack) {
+        if (stack.isEmpty()) return false;
+        return stack.is(autosawmill.common.item.ModItems.SAW_BLADE.get()) || stack.is(SAW_BLADES);
+    }
 
     private WoodHelper() {}
 

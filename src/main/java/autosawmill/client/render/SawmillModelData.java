@@ -81,17 +81,30 @@ public final class SawmillModelData {
     }
 
     /**
-     * Reciprocating saw frame and blade geometry (teeth, vertical posts, top/middle/bottom cross beams).
-     * The old 3-block lateral drive ear has been removed.
+     * Moving carriage frame (vertical posts, top cross beam, middle cross beam).
      */
-    public static final ModelCube[] SAW = new ModelCube[] {
+    public static final ModelCube[] MOVING_FRAME = new ModelCube[] {
         // 1. Right vertical post
         new ModelCube(0.64219f, 0.99062f, -0.06250f, 0.70469f, 2.55313f, 0.06250f, new float[] {0.02344f, 0.51562f, 0.03125f, 0.71094f, 0.03906f, 0.51562f, 0.04688f, 0.71094f, 0.33594f, 0.48438f, 0.35156f, 0.67969f, 0.35938f, 0.48438f, 0.37500f, 0.67969f, 0.53906f, 0.66406f, 0.54688f, 0.67969f, 0.66406f, 0.54688f, 0.67188f, 0.56250f}, null),
 
         // 2. Left vertical post
         new ModelCube(-1.17031f, 0.99062f, -0.06250f, -1.10781f, 2.55313f, 0.06250f, new float[] {0.05469f, 0.51562f, 0.06250f, 0.71094f, 0.07031f, 0.51562f, 0.07812f, 0.71094f, 0.38281f, 0.48438f, 0.39844f, 0.67969f, 0.40625f, 0.48438f, 0.42188f, 0.67969f, 0.55469f, 0.66406f, 0.56250f, 0.67969f, 0.57031f, 0.66406f, 0.57812f, 0.67969f}, null),
 
-        // 3. 15 Saw teeth
+        // 3. Top horizontal beam
+        new ModelCube(-1.23281f, 2.45938f, -0.03125f, 0.76719f, 2.52188f, 0.03125f, new float[] {0.51562f, 0.13281f, 0.75781f, 0.14062f, 0.51562f, 0.14844f, 0.75781f, 0.15625f, 0.56250f, 0.52344f, 0.57031f, 0.53125f, 0.10938f, 0.64062f, 0.11719f, 0.64844f, 0.51562f, 0.16406f, 0.75781f, 0.17188f, 0.51562f, 0.17969f, 0.75781f, 0.18750f}, null),
+
+        // 4. Middle horizontal cross beam (connecting left & right vertical posts)
+        new ModelCube(-1.10781f, 1.94375f, -0.04688f, 0.64219f, 2.03750f, 0.04688f, new float[] {0.42188f, 0.38281f, 0.63281f, 0.39844f, 0.31250f, 0.46094f, 0.52344f, 0.47656f, 0.08594f, 0.64062f, 0.10156f, 0.65625f, 0.64062f, 0.38281f, 0.65625f, 0.39844f, 0.46875f, 0.06250f, 0.67969f, 0.07812f, 0.46875f, 0.08594f, 0.67969f, 0.10156f}, null)
+    };
+
+    /**
+     * Installable saw blade (horizontal steel blade bar + 15 saw teeth).
+     */
+    public static final ModelCube[] BLADE = new ModelCube[] {
+        // Horizontal blade bar
+        new ModelCube(-1.10781f, 1.08438f, -0.01562f, 0.64219f, 1.20938f, 0.01562f, new float[] {0.42188f, 0.00000f, 0.63281f, 0.01562f, 0.42188f, 0.03125f, 0.63281f, 0.04688f, 0.15625f, 0.65625f, 0.16406f, 0.67188f, 0.62500f, 0.65625f, 0.63281f, 0.67188f, 0.51562f, 0.19531f, 0.72656f, 0.20312f, 0.51562f, 0.21094f, 0.72656f, 0.21875f}, null),
+
+        // 15 Saw teeth
         new ModelCube(-0.99844f, 1.03594f, -0.01250f, -0.86562f, 1.12500f, 0.01250f, new float[] {0.60938f, 0.01562f, 0.61719f, 0.02344f, 0.43750f, 0.04688f, 0.44531f, 0.05469f, 0.15625f, 0.67188f, 0.16406f, 0.67969f, 0.62500f, 0.67188f, 0.63281f, 0.67969f, 0.53125f, 0.19531f, 0.53906f, 0.20312f, 0.53125f, 0.21094f, 0.53906f, 0.21875f}, new float[] {-0.9515625f, 1.0828125f, 0.0f, 0f, 0f, -45f}),
         new ModelCube(-0.87344f, 1.03594f, -0.01250f, -0.74062f, 1.12500f, 0.01250f, new float[] {0.59375f, 0.01562f, 0.60156f, 0.02344f, 0.45312f, 0.04688f, 0.46094f, 0.05469f, 0.15625f, 0.67188f, 0.16406f, 0.67969f, 0.62500f, 0.67188f, 0.63281f, 0.67969f, 0.54688f, 0.19531f, 0.55469f, 0.20312f, 0.54688f, 0.21094f, 0.55469f, 0.21875f}, new float[] {-0.8265625f, 1.0828125f, 0.0f, 0f, 0f, -45f}),
         new ModelCube(-0.74844f, 1.03594f, -0.01250f, -0.61562f, 1.12500f, 0.01250f, new float[] {0.57812f, 0.01562f, 0.58594f, 0.02344f, 0.46875f, 0.04688f, 0.47656f, 0.05469f, 0.15625f, 0.67188f, 0.16406f, 0.67969f, 0.62500f, 0.67188f, 0.63281f, 0.67969f, 0.56250f, 0.19531f, 0.57031f, 0.20312f, 0.56250f, 0.21094f, 0.57031f, 0.21875f}, new float[] {-0.7015625f, 1.0828125f, 0.0f, 0f, 0f, -45f}),
@@ -106,21 +119,21 @@ public final class SawmillModelData {
         new ModelCube(0.25156f, 1.03594f, -0.01250f, 0.38438f, 1.12500f, 0.01250f, new float[] {0.45312f, 0.01562f, 0.46094f, 0.02344f, 0.59375f, 0.04688f, 0.60156f, 0.05469f, 0.15625f, 0.67188f, 0.16406f, 0.67969f, 0.62500f, 0.67188f, 0.63281f, 0.67969f, 0.68750f, 0.19531f, 0.69531f, 0.20312f, 0.68750f, 0.21094f, 0.69531f, 0.21875f}, new float[] {0.2984375f, 1.0828125f, 0.0f, 0f, 0f, -45f}),
         new ModelCube(0.37656f, 1.03594f, -0.01250f, 0.50938f, 1.12500f, 0.01250f, new float[] {0.43750f, 0.01562f, 0.44531f, 0.02344f, 0.60938f, 0.04688f, 0.61719f, 0.05469f, 0.15625f, 0.67188f, 0.16406f, 0.67969f, 0.62500f, 0.67188f, 0.63281f, 0.67969f, 0.70312f, 0.19531f, 0.71094f, 0.20312f, 0.70312f, 0.21094f, 0.71094f, 0.21875f}, new float[] {0.4234375f, 1.0828125f, 0.0f, 0f, 0f, -45f}),
         new ModelCube(0.50156f, 1.03594f, -0.01250f, 0.63438f, 1.12500f, 0.01250f, new float[] {0.42188f, 0.01562f, 0.42969f, 0.02344f, 0.62500f, 0.04688f, 0.63281f, 0.05469f, 0.15625f, 0.67188f, 0.16406f, 0.67969f, 0.62500f, 0.67188f, 0.63281f, 0.67969f, 0.71875f, 0.19531f, 0.72656f, 0.20312f, 0.71875f, 0.21094f, 0.72656f, 0.21875f}, new float[] {0.5484375f, 1.0828125f, 0.0f, 0f, 0f, -45f}),
-        new ModelCube(0.62656f, 1.03594f, -0.01250f, 0.69688f, 1.06250f, 0.01250f, new float[] {0.42188f, 0.01562f, 0.42969f, 0.02344f, 0.62500f, 0.04688f, 0.63281f, 0.05469f, 0.15625f, 0.67188f, 0.16406f, 0.67969f, 0.62500f, 0.67188f, 0.63281f, 0.67969f, 0.71875f, 0.19531f, 0.72656f, 0.20312f, 0.71875f, 0.21094f, 0.72656f, 0.21875f}, new float[] {0.6734375f, 1.0828125f, 0.0f, 0f, 0f, -45f}),
-
-        // 4. Lower blade holder horizontal beam
-        new ModelCube(-1.10781f, 1.08438f, -0.01562f, 0.64219f, 1.20938f, 0.01562f, new float[] {0.42188f, 0.00000f, 0.63281f, 0.01562f, 0.42188f, 0.03125f, 0.63281f, 0.04688f, 0.15625f, 0.65625f, 0.16406f, 0.67188f, 0.62500f, 0.65625f, 0.63281f, 0.67188f, 0.51562f, 0.19531f, 0.72656f, 0.20312f, 0.51562f, 0.21094f, 0.72656f, 0.21875f}, null),
-
-        // 5. Top horizontal beam
-        new ModelCube(-1.23281f, 2.45938f, -0.03125f, 0.76719f, 2.52188f, 0.03125f, new float[] {0.51562f, 0.13281f, 0.75781f, 0.14062f, 0.51562f, 0.14844f, 0.75781f, 0.15625f, 0.56250f, 0.52344f, 0.57031f, 0.53125f, 0.10938f, 0.64062f, 0.11719f, 0.64844f, 0.51562f, 0.16406f, 0.75781f, 0.17188f, 0.51562f, 0.17969f, 0.75781f, 0.18750f}, null),
-
-        // 6. Middle horizontal cross beam (connecting left & right vertical posts)
-        new ModelCube(-1.10781f, 1.94375f, -0.04688f, 0.64219f, 2.03750f, 0.04688f, new float[] {0.42188f, 0.38281f, 0.63281f, 0.39844f, 0.31250f, 0.46094f, 0.52344f, 0.47656f, 0.08594f, 0.64062f, 0.10156f, 0.65625f, 0.64062f, 0.38281f, 0.65625f, 0.39844f, 0.46875f, 0.06250f, 0.67969f, 0.07812f, 0.46875f, 0.08594f, 0.67969f, 0.10156f}, null)
+        new ModelCube(0.62656f, 1.03594f, -0.01250f, 0.69688f, 1.06250f, 0.01250f, new float[] {0.42188f, 0.01562f, 0.42969f, 0.02344f, 0.62500f, 0.04688f, 0.63281f, 0.05469f, 0.15625f, 0.67188f, 0.16406f, 0.67969f, 0.62500f, 0.67188f, 0.63281f, 0.67969f, 0.71875f, 0.19531f, 0.72656f, 0.20312f, 0.71875f, 0.21094f, 0.72656f, 0.21875f}, new float[] {0.6734375f, 1.0828125f, 0.0f, 0f, 0f, -45f})
     };
 
     /**
-     * Compact mounting flange / clevis socket on the left side of the saw frame,
-     * mating with the TFC crankshaft piston rod at the block boundary.
+     * Complete combined array for backward compatibility.
+     */
+    public static final ModelCube[] SAW = new ModelCube[] {
+        MOVING_FRAME[0], MOVING_FRAME[1],
+        BLADE[1], BLADE[2], BLADE[3], BLADE[4], BLADE[5], BLADE[6], BLADE[7], BLADE[8], BLADE[9], BLADE[10], BLADE[11], BLADE[12], BLADE[13], BLADE[14], BLADE[15],
+        BLADE[0], MOVING_FRAME[2], MOVING_FRAME[3]
+    };
+
+    /**
+     * Compact mounting flange / clevis socket on the left side of the saw frame (upper level, Y ~ 1.95),
+     * mating with the TFC crankshaft piston rod when mounted at FRAME_TOP.
      */
     public static final ModelCube[] FLANGE_LEFT = new ModelCube[] {
         new ModelCube(-1.26406f, 1.92500f, -0.06250f, -1.17031f, 2.05625f, 0.06250f, new float[] {0.66406f, 0.57031f, 0.67188f, 0.58594f, 0.66406f, 0.61719f, 0.67188f, 0.63281f, 0.66406f, 0.59375f, 0.67188f, 0.60938f, 0.64062f, 0.66406f, 0.64844f, 0.67969f, 0.15625f, 0.68750f, 0.16406f, 0.69531f, 0.25000f, 0.68750f, 0.25781f, 0.69531f}, null),
@@ -128,12 +141,66 @@ public final class SawmillModelData {
     };
 
     /**
-     * Compact mounting flange / clevis socket on the right side of the saw frame,
-     * mating with the TFC crankshaft piston rod at the block boundary.
+     * Compact mounting flange / clevis socket on the right side of the saw frame (upper level, Y ~ 1.95),
+     * mating with the TFC crankshaft piston rod when mounted at FRAME_TOP.
      */
     public static final ModelCube[] FLANGE_RIGHT = new ModelCube[] {
         new ModelCube(0.70469f, 1.92500f, -0.06250f, 0.79844f, 2.05625f, 0.06250f, new float[] {0.66406f, 0.57031f, 0.67188f, 0.58594f, 0.66406f, 0.61719f, 0.67188f, 0.63281f, 0.66406f, 0.59375f, 0.67188f, 0.60938f, 0.64062f, 0.66406f, 0.64844f, 0.67969f, 0.15625f, 0.68750f, 0.16406f, 0.69531f, 0.25000f, 0.68750f, 0.25781f, 0.69531f}, null),
         new ModelCube(0.79844f, 1.95625f, -0.03125f, 0.89219f, 2.02500f, 0.03125f, new float[] {0.53125f, 0.46094f, 0.55469f, 0.47656f, 0.21094f, 0.60156f, 0.23438f, 0.61719f, 0.66406f, 0.34375f, 0.67188f, 0.35938f, 0.66406f, 0.36719f, 0.67188f, 0.38281f, 0.64062f, 0.04688f, 0.66406f, 0.05469f, 0.64844f, 0.29688f, 0.67188f, 0.30469f}, null)
+    };
+
+    /**
+     * Compact mounting flange on the left side at blade height (Y ~ 1.14),
+     * mating with the TFC crankshaft piston rod when mounted at ground/BED level.
+     */
+    public static final ModelCube[] FLANGE_LOWER_LEFT = new ModelCube[] {
+        new ModelCube(-1.26406f, 1.09000f, -0.06250f, -1.17031f, 1.21000f, 0.06250f, new float[] {0.66406f, 0.57031f, 0.67188f, 0.58594f, 0.66406f, 0.61719f, 0.67188f, 0.63281f, 0.66406f, 0.59375f, 0.67188f, 0.60938f, 0.64062f, 0.66406f, 0.64844f, 0.67969f, 0.15625f, 0.68750f, 0.16406f, 0.69531f, 0.25000f, 0.68750f, 0.25781f, 0.69531f}, null),
+        new ModelCube(-1.35781f, 1.11500f, -0.03125f, -1.26406f, 1.18500f, 0.03125f, new float[] {0.53125f, 0.46094f, 0.55469f, 0.47656f, 0.21094f, 0.60156f, 0.23438f, 0.61719f, 0.66406f, 0.34375f, 0.67188f, 0.35938f, 0.66406f, 0.36719f, 0.67188f, 0.38281f, 0.64062f, 0.04688f, 0.66406f, 0.05469f, 0.64844f, 0.29688f, 0.67188f, 0.30469f}, null)
+    };
+
+    /**
+     * Compact mounting flange on the right side at blade height (Y ~ 1.14),
+     * mating with the TFC crankshaft piston rod when mounted at ground/BED level.
+     */
+    public static final ModelCube[] FLANGE_LOWER_RIGHT = new ModelCube[] {
+        new ModelCube(0.70469f, 1.09000f, -0.06250f, 0.79844f, 1.21000f, 0.06250f, new float[] {0.66406f, 0.57031f, 0.67188f, 0.58594f, 0.66406f, 0.61719f, 0.67188f, 0.63281f, 0.66406f, 0.59375f, 0.67188f, 0.60938f, 0.64062f, 0.66406f, 0.64844f, 0.67969f, 0.15625f, 0.68750f, 0.16406f, 0.69531f, 0.25000f, 0.68750f, 0.25781f, 0.69531f}, null),
+        new ModelCube(0.79844f, 1.11500f, -0.03125f, 0.89219f, 1.18500f, 0.03125f, new float[] {0.53125f, 0.46094f, 0.55469f, 0.47656f, 0.21094f, 0.60156f, 0.23438f, 0.61719f, 0.66406f, 0.34375f, 0.67188f, 0.35938f, 0.66406f, 0.36719f, 0.67188f, 0.38281f, 0.64062f, 0.04688f, 0.66406f, 0.05469f, 0.64844f, 0.29688f, 0.67188f, 0.30469f}, null)
+    };
+
+    /**
+     * Steel drive linkage extending from the right flange through the static frame post (upper level)
+     * to meet the TFC crankshaft piston head in a continuous kinematic chain.
+     */
+    public static final ModelCube[] DRIVE_LINKAGE_RIGHT = new ModelCube[] {
+        new ModelCube(0.85000f, 1.95625f, -0.03125f, 1.60000f, 2.02500f, 0.03125f, new float[] {0.53125f, 0.46094f, 0.55469f, 0.47656f, 0.21094f, 0.60156f, 0.23438f, 0.61719f, 0.66406f, 0.34375f, 0.67188f, 0.35938f, 0.66406f, 0.36719f, 0.67188f, 0.38281f, 0.64062f, 0.04688f, 0.66406f, 0.05469f, 0.64844f, 0.29688f, 0.67188f, 0.30469f}, null),
+        new ModelCube(1.48000f, 1.92500f, -0.06250f, 1.60000f, 2.05625f, 0.06250f, new float[] {0.66406f, 0.57031f, 0.67188f, 0.58594f, 0.66406f, 0.61719f, 0.67188f, 0.63281f, 0.66406f, 0.59375f, 0.67188f, 0.60938f, 0.64062f, 0.66406f, 0.64844f, 0.67969f, 0.15625f, 0.68750f, 0.16406f, 0.69531f, 0.25000f, 0.68750f, 0.25781f, 0.69531f}, null)
+    };
+
+    /**
+     * Steel drive linkage extending from the left flange through the static frame post (upper level)
+     * to meet the TFC crankshaft piston head in a continuous kinematic chain.
+     */
+    public static final ModelCube[] DRIVE_LINKAGE_LEFT = new ModelCube[] {
+        new ModelCube(-1.60000f, 1.95625f, -0.03125f, -1.26000f, 2.02500f, 0.03125f, new float[] {0.53125f, 0.46094f, 0.55469f, 0.47656f, 0.21094f, 0.60156f, 0.23438f, 0.61719f, 0.66406f, 0.34375f, 0.67188f, 0.35938f, 0.66406f, 0.36719f, 0.67188f, 0.38281f, 0.64062f, 0.04688f, 0.66406f, 0.05469f, 0.64844f, 0.29688f, 0.67188f, 0.30469f}, null),
+        new ModelCube(-1.60000f, 1.92500f, -0.06250f, -1.48000f, 2.05625f, 0.06250f, new float[] {0.66406f, 0.57031f, 0.67188f, 0.58594f, 0.66406f, 0.61719f, 0.67188f, 0.63281f, 0.66406f, 0.59375f, 0.67188f, 0.60938f, 0.64062f, 0.66406f, 0.64844f, 0.67969f, 0.15625f, 0.68750f, 0.16406f, 0.69531f, 0.25000f, 0.68750f, 0.25781f, 0.69531f}, null)
+    };
+
+    /**
+     * Steel drive linkage extending from the left flange through the static frame post at blade height (lower level)
+     * into the TFC crankshaft piston rod.
+     */
+    public static final ModelCube[] DRIVE_LINKAGE_LOWER_LEFT = new ModelCube[] {
+        new ModelCube(-1.60000f, 1.11500f, -0.03125f, -1.26000f, 1.18500f, 0.03125f, new float[] {0.53125f, 0.46094f, 0.55469f, 0.47656f, 0.21094f, 0.60156f, 0.23438f, 0.61719f, 0.66406f, 0.34375f, 0.67188f, 0.35938f, 0.66406f, 0.36719f, 0.67188f, 0.38281f, 0.64062f, 0.04688f, 0.66406f, 0.05469f, 0.64844f, 0.29688f, 0.67188f, 0.30469f}, null),
+        new ModelCube(-1.60000f, 1.09000f, -0.06250f, -1.48000f, 1.21000f, 0.06250f, new float[] {0.66406f, 0.57031f, 0.67188f, 0.58594f, 0.66406f, 0.61719f, 0.67188f, 0.63281f, 0.66406f, 0.59375f, 0.67188f, 0.60938f, 0.64062f, 0.66406f, 0.64844f, 0.67969f, 0.15625f, 0.68750f, 0.16406f, 0.69531f, 0.25000f, 0.68750f, 0.25781f, 0.69531f}, null)
+    };
+
+    /**
+     * Steel drive linkage extending from the right flange through the static frame post at blade height (lower level)
+     * into the TFC crankshaft piston rod.
+     */
+    public static final ModelCube[] DRIVE_LINKAGE_LOWER_RIGHT = new ModelCube[] {
+        new ModelCube(0.85000f, 1.11500f, -0.03125f, 1.60000f, 1.18500f, 0.03125f, new float[] {0.53125f, 0.46094f, 0.55469f, 0.47656f, 0.21094f, 0.60156f, 0.23438f, 0.61719f, 0.66406f, 0.34375f, 0.67188f, 0.35938f, 0.66406f, 0.36719f, 0.67188f, 0.38281f, 0.64062f, 0.04688f, 0.66406f, 0.05469f, 0.64844f, 0.29688f, 0.67188f, 0.30469f}, null),
+        new ModelCube(1.48000f, 1.09000f, -0.06250f, 1.60000f, 1.21000f, 0.06250f, new float[] {0.66406f, 0.57031f, 0.67188f, 0.58594f, 0.66406f, 0.61719f, 0.67188f, 0.63281f, 0.66406f, 0.59375f, 0.67188f, 0.60938f, 0.64062f, 0.66406f, 0.64844f, 0.67969f, 0.15625f, 0.68750f, 0.16406f, 0.69531f, 0.25000f, 0.68750f, 0.25781f, 0.69531f}, null)
     };
 
     private SawmillModelData() {}

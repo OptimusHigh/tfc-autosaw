@@ -3,7 +3,7 @@
   "category": "misc",
   "pattern": [
     "LRL",
-    "LBL",
+    "L L",
     "LML"
   ],
   "key": {
@@ -21,9 +21,6 @@
         "tag": "c:rods/cast_iron"
       }
     ],
-    "B": {
-      "item": "autosawmill:saw_blade"
-    },
     "M": [
       {
         "item": "tfc:brass_mechanisms"
